@@ -12,3 +12,4 @@
 3. markdown to mind map
 4. user interface for friends to visit
 5. multi-tier system inserting into RAG DB(url), agent self motivated visiting url, incase lacking of information
+6. bilibili input
