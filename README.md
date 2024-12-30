@@ -30,6 +30,7 @@ Windows系统有最长路径限制，这可能导致安装失败。可以通过�
     其中的向量编码模型（embedding model）根据 benchmark ：https://huggingface.co/spaces/mteb/leaderboard ， 选择了'sentence-transformers/all-MiniLM-L6-v2' ；<br>
     程序启动时，自动根据给定的地址中的所有文件构建database，进而构建RAG系统以及围绕RAG系统的问答系统；<br>
     操作界面基于实时对话，可在其中询问有关资料库的问题<br>
+    注意：因为使用LLM Reranker，如果LLM回答的不对，可能会遇到IndexError: list index out of range；这个问题可能出现且暂时无法避免<br>
 
 ### 其他工具
 1. 自动写代码：./CodeWriter

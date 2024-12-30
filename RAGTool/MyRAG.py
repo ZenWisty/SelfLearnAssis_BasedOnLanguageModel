@@ -1,6 +1,7 @@
 import asyncio
 import os
 import glob
+import shutil
 
 from pydantic import BaseModel
 
@@ -31,7 +32,7 @@ embed_model = HuggingFaceInferenceAPIEmbeddings(
 
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-rerank_model = AutoModelForSequenceClassification.from_pretrained('BAAI/bge-reranker-base')
+# rerank_model = AutoModelForSequenceClassification.from_pretrained('BAAI/bge-reranker-base')
 # tokenizer = AutoTokenizer.from_pretrained('BAAI/bge-reranker-base')
 
 # RAG example of MetaGPT
@@ -94,16 +95,26 @@ class RAGTool:
 
 if __name__ == '__main__':
     # 初始化一个RAGTool对象，用于查询和检索。 需要给出初始的文档，用于构建 RAG 模型的文档库`。
-    folder_path = 'E:\Python_work\LLM_MetaGPT\MetaGPT-main\examples\yxh_localworkspace\AgentMaterials'
+    
+    this_file_path = os.path.abspath(__file__)
+    db_path = os.path.join(os.path.dirname(this_file_path), 'database')
+    # if os.path.exists(db_path):
+    #     shutil.rmtree(db_path)
+    #     os.makedirs(db_path)
+    folder_path = os.path.join(os.path.dirname(this_file_path), 'files')
     file_paths = glob.glob(os.path.join(folder_path, '*'))  # 使用 glob.glob() 获取所有文件的路径 ;模式 * 表示匹配任意数量的字符
+
     # TODO: 要添加的功能：这里RAGTool 的构建需要考虑 调用 from persist path，或者在构建时就先删除(clear) 原路径下的数据库
     ragpool = RAGTool(use_llm_ranker=False, embed_mod=embed_model, 
                       init_input_files=file_paths)
+
+    # TODO: persist 函数上移， 显示初始化db 的path
+    ragpool.engine.persist(db_path)
     
     # add relative docs
     TRAVEL_QUESTION = f"请用中文回答，Agent AI 这篇论文讲了什么内容，可以引用他的相关abstract。 {LLM_TIP}"
-    travel_filepath = r'E:\Python_work\LLM_MetaGPT\MetaGPT-main\examples\yxh_localworkspace\AgentMaterials\2401.03568v2_Note.txt'
-    ragpool.engine.add_docs([travel_filepath])
+    # travel_filepath = r'E:\Python_work\LLM_MetaGPT\MetaGPT-main\examples\yxh_localworkspace\AgentMaterials\2401.03568v2_Note.txt'
+    # ragpool.engine.add_docs([travel_filepath])
 
     # query again
     nodes = ragpool.engine.retrieve(TRAVEL_QUESTION)
