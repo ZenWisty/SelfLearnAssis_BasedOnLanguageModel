@@ -1,0 +1,51 @@
+[Q]: 给出适配器的详细解释和例子
+[A]: 适配器模式（Adapter Pattern）是一种结构型设计模式，它允许将一个类的接口转换成客户端期望的另一
+个接口。这 way，可以让原本在一起不兼容的类可以一起工作。
+
+适配器模式由三个核心组件构成：
+
+- 目标（Target）：定义客户端期望的接口。
+- 适配者（Adaptee）：定义现有的接口，需要被适配者转换成目标接口。
+- 适配器（Adapter）：实现目标接口，同时持有一个适配者对象，它将适配者的接口转换成目标接口。
+
+适配器模式的优缺点包括：
+
+- 将一个类的接口转换成客户端期望的另一个接口，使得原本由于接口不兼容而不能一起工作的类可以一起工作。
+- 提高了类的复用性，将原本无法复用的类转换成可复用的类。
+- 增加了系统的灵活性，在实现新功能的时候可以通过使用适配器来实现。
+- 对客户端透明，客户端并不需要知道是哪个适配器，只需要知道目标接口即可。
+- 适配器模式的缺点是，增加了系统的复杂性，需要额外的类来完成适配工作。
+
+下面是一个简单的使用 Python 实现适配器模式的例子。
+
+假设我们有一个电源适配器，它可以将 100V 的电压转换成 220V。我们可以使用适配器模式来适配这个电源适配器，从而使得可以在不同的电压下使用同一个电器：
+
+首先，我们需要定义一个目标接口 Voltage，它包含一个抽象方法 get_voltage，用于获取电压：
+
+class Voltage:
+def get_voltage(self):
+pass
+接下来，我们定义一个适配者类 Adaptee，它包含一个方法 get\_100v，用于获取 100V 的电压：
+
+class Adaptee:
+def get\_100v(self):
+return 100
+然后，我们定义一个适配器类 Adapter，它实现了 Voltage 接口，并且持有一个 Adaptee 对象：
+
+class Adapter(Voltage):
+def __init__(self, adaptee):
+self.adaptee = adaptee
+
+def get\_voltage(self):
+voltage = self.adaptee.get\_100v()
+return voltage \* 2
+最后，我们可以使用这些类来模拟电源适配器的运行过程。例如，我们可以创建一个 Adaptee 对象，并将其传递给 Adapter 对象，然后调用 Adapter 对象的 get\_voltage 方法：     
+
+adaptee = Adaptee()
+adapter = Adapter(adaptee)
+voltage = adapter.get\_voltage()
+print(f"The voltage is {voltage}V")
+这样，我们就成功地使用适配器模式来适配电源适配器。
+
+实际上，Python 自带的 iterator 和 iterable 也可以看作是一个适配器模式的例子。iterator 是一个接口，定义了 next() 方法，iterable 是另一个接口，定义了 iter() 方法。通 
+过使用 iter() 方法，可以将一个 iterable 对象转换成一个 iterator 对象，从而实现对 iterable 对象的遍历。

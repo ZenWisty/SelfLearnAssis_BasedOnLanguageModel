@@ -1,0 +1,24 @@
+[Q]: python 设计模式总共有多少种
+[A]: 1. 单例（Singleton）
+2. 原型（Prototype）
+3. 工厂方法（Factory Method）
+4. 抽象工厂（Abstract Factory）
+5. 建造者（Builder）
+6.  adapter（适配器）
+7. 桥接（Bridge）
+8. 组合（Composite）
+9. 装饰（Decorator）
+10. 外观（Facade）
+11. 享元（Flyweight）
+12. 代理（Proxy）
+13. 命令（Command）
+14. 迭代器（Iterator）
+15. 中介者（Mediator）
+16. 备忘录（Memento）
+17. 观察者（Observer）
+18. 状态（State）
+19. 策略（Strategy）
+20. 模板方法（Template Method）
+21. 访问者（Visitor）
+22. 解释器（Interpreter）
+23. Null 对象（Null Object）

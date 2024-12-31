@@ -1,0 +1,81 @@
+[Q]: 请给出 观察者(Observer) 的详细解释和例子
+[A]: 观察者模式（Observer）是一种行为型设计模式，它允许一个对象（被观察者）在状态发生变化时，通知 
+其他依 attachment 关联的对象（观察者）。这种模式主要解决了一对多依赖关系的问题，让多个观察者对象同时监听和响应一个被观察者对象的状态变化。
+
+观察者模式由三个核心组件构成：
+
+1. 被观察者（Subject）：维护一个观察者列表，当其状态发生变化时，通知所有已注册的观察者。
+2. 观察者（Observer）：定义一个更新接口，被动接收被观察者的状态变化通知，并进行相应的处理。
+3. 具体被观察者（ConcreteSubject）：实现Subject接口，在状态变化时通知所有观察者。
+4. 具体观察者（ConcreteObserver）：实现Observer接口，接收被观察者的状态变化通知并进行相应的处理。
+
+下面是观察者模式的 Python 实现示例：
+
+```python
+# 被观察者
+class Subject:
+    def __init__(self):
+        self._observers = []
+
+    def attach(self, observer):
+        if observer not in self._observers:
+            self._observers.append(observer)
+
+    def detach(self, observer):
+        try:
+            self._observers.remove(observer)
+        except ValueError:
+            pass
+
+    def notify(self, modifier=None):
+        for observer in self._observers:
+            if modifier != observer:
+                observer.update(self)
+
+
+# 观察者
+class Observer:
+    def update(self, subject):
+        pass
+
+
+# 具体被观察者
+class ConcreteSubject(Subject):
+    def __init__(self):
+        super().__init__()
+        self._state = None
+
+    @property
+    def state(self):
+        return self._state
+
+    @state.setter
+    def state(self, state):
+        self._state = state
+        self.notify()
+
+
+# 具体观察者
+class ConcreteObserver(Observer):
+    def __init__(self, name):
+        self._name = name
+
+    def update(self, subject):
+        print(f'{self._name} received an update: {subject.state}')
+
+
+subject = ConcreteSubject()
+observer1 = ConcreteObserver('Observer 1')
+observer2 = ConcreteObserver('Observer 2')
+subject.attach(observer1)
+subject.attach(observer2)
+
+subject.state = 123
+subject.detach(observer1)
+
+subject.state = 456
+```
+
+在上面的实现中，Subject 是被观察者类，Observer 是观察者类，ConcreteSubject 是具体被观察者类，ConcreteObserver 是具体观察者类。当主题状态发生变化时，它会通过 notify 
+方法通知所有观察者。观察者可以通过 update 方法接收到主题的状态变化，并进行相应的处理。在上面的例子中，我们创建了一个 ConcreteSubject 对象，然后创建了两个 ConcreteObserver 对象，并将它们添加到主题的观察者列表中。接着，我们改变了主题的状态两次，第一次时两个观察者都收到了通知，第二次时只有一个观察者收到了通知。最后，我们从主题的 
+观察者列表中移除了一个观察者，并再次改变了主题的状态，这时只有一个观察者收到了通知。
