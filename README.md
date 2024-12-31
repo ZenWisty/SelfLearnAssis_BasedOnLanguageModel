@@ -19,7 +19,7 @@ Windows系统有最长路径限制，这可能导致安装失败。可以通过�
 
 ### Release
 1. RAG system implementing <br>
-    使用案例见 ./RAGTool 中的详细使用记录(基于需要文件资料库的问答被记录了下来，当问答不准确时有纠正的问答对，可用作后续reranker(LORA)的训练金标准) <br>
+    使用案例见 ./RAGTool 中的详细使用记录(基于需要文件资料库的问答被记录了下来，当问答不准确时有纠正的问答对，可用作后续reranker(LORA)和LLM(LORA)的训练金标准) <br>
 
 2. dpo learning inserting <br>
 
