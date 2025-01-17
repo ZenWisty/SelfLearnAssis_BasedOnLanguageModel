@@ -10,3 +10,8 @@ Q&A: RAGTool/QARecord/design_pattern/*
 
 ##### 系统设计中的概念：
 原始数据库：RAGTool/files/system_design/*
+
+##### 分布式AI集群：
+原文数据库：RAGTool/files/distributed_ai_cluster/*
+Q&A: RAGTool/QARecord/distributed_ai_cluster/*
+总结文档：RAGTool/Summary/distributed_ai_cluster/*

@@ -15,8 +15,8 @@ def load_and_preprocess_mp3(file_path):
 
 
 def main():
-    file_path = r"E:\Python_work\LLM_MetaGPT\Publish\SelfLearnAssis_BasedOnLanguageModel\RAGTool\files\systemDesign\audioData\8个常见的系统设计概念\1-8个常见的系统设计概念-480P 清晰-AVC.mp3"
-    output_path = r'E:\Python_work\LLM_MetaGPT\Publish\SelfLearnAssis_BasedOnLanguageModel\RAGTool\files\systemDesign\TextData\8个常见的系统设计概念.txt'
+    file_path = r"E:\BiliBiliVideo\社会\探访东德高级人才住宅区，美国黑人区顶流up吃上德国甜甜圈！feat.街头小小小霸王\14-探访东德高级人才住宅区，美国黑人区顶流up吃上德国甜甜圈！feat.街头小小小霸王-480P 清晰-AVC.mp3"
+    output_path = r'E:\BiliBiliVideo\社会\探访东德高级人才住宅区，美国黑人区顶流up吃上德国甜甜圈！feat.街头小小小霸王\14-探访东德高级人才住宅区，美国黑人区顶流up吃上德国甜甜圈！feat.街头小小小霸王-480P 清晰-AVC.txt'
 
     asr_pipeline = pipeline(task="automatic-speech-recognition",
                model = "distil-whisper/distil-small.en")

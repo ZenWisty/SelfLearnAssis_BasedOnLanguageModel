@@ -32,7 +32,7 @@ embed_model = HuggingFaceInferenceAPIEmbeddings(
 
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-# rerank_model = AutoModelForSequenceClassification.from_pretrained('BAAI/bge-reranker-base')
+rerank_model = AutoModelForSequenceClassification.from_pretrained('BAAI/bge-reranker-base')
 # tokenizer = AutoTokenizer.from_pretrained('BAAI/bge-reranker-base')
 
 # RAG example of MetaGPT

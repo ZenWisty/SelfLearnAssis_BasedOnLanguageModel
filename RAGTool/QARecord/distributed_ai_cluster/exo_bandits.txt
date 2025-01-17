@@ -1,0 +1,693 @@
+
+vincent | t0kenl1mit — 2024/10/5 04:11
+have a server with about 20GB VRAM but very low FLOP GPUs
+vanakema — 2024/10/6 05:33
+Any potential for a bounty for implementing function calling structured output? This would enable people who are using the Instructor library to use it with Exo 
+Alex Cheema | exo — 2024/10/6 07:09
+Yes, GRPC is the only thing we support right now for peer handles
+Alex Cheema | exo — 2024/10/6 07:10
+Yes! could you create an issue? this would be awesome
+I will assign a bounty to it
+vanakema — 2024/10/6 08:09
+Awesome. Here ya go
+
+https://github.com/exo-explore/exo/issues/293
+GitHub
+Support function/tool calling as laid out by OpenAI's API spec · Is...
+I think it would be awesome if exo supported tool calling as laid out by OpenAI's API spec. It would allow people to get reliable structured generation via the Instructor library that is quite ...
+Support function/tool calling as laid out by OpenAI's API spec · Is...
+Alex Cheema | exo — 2024/10/7 01:54
+Thanks! Assigned $300 bounty
+https://github.com/exo-explore/exo/issues/293
+GitHub
+[BOUNTY - $300] Support function/tool calling as laid out by OpenAI...
+I think it would be awesome if exo supported tool calling as laid out by OpenAI's API spec. It would allow people to get reliable structured generation via the Instructor library that is quite ...
+[BOUNTY - $300] Support function/tool calling as laid out by OpenAI...
+vincent | t0kenl1mit — 2024/10/7 05:06
+@Alex Cheema | exo  from pytorch pr, I am fixing the torch==2.4.0 but I also think it might come down to what version of CUDA the user has
+this would require cuda 12.4
+Alex Cheema | exo — 2024/10/7 09:32
+hmm i wonder if someone already found a nice way to do this
+Alex Cheema | exo — 2024/10/7 09:32
+we can just make this a prerequisite when running with NVIDIA GPUs
+with Apple Silicon, it works fine for me
+vincent | t0kenl1mit — 2024/10/7 09:42
+I think 12.4 cuda might be the most common too
+Alex Cheema | exo — 2024/10/7 19:17
+cool. can you add that to the prerequisites in the readme pls
+@vincent | t0kenl1mit llama 3.1 on pytorch inference engine working perfectly for me now 🙂 
+vincent | t0kenl1mit — 2024/10/7 23:35
+Good to hear, also seen your notes on the code and will clean it now
+vincent | t0kenl1mit — 2024/10/8 08:31
+https://github.com/xjdr-alt/entropix 🤔
+GitHub
+GitHub - xjdr-alt/entropix: Entropy Based Sampling and Parallel CoT...
+Entropy Based Sampling and Parallel CoT Decoding . Contribute to xjdr-alt/entropix development by creating an account on GitHub.
+GitHub - xjdr-alt/entropix: Entropy Based Sampling and Parallel CoT...
+logan│exo — 2024/10/8 14:05
+https://github.com/exo-explore/exo/pull/314
+GitHub
+feat: available memory partition by thenatlog · Pull Request #314 ·...
+Add Available Memory Weighted Partitioning Strategy
+
+Summary
+This PR introduces a new partitioning strategy called AvailableMemoryWeightedPartitioningStrategy. This strategy distributes workloads a...
+vincent | t0kenl1mit — 2024/10/9 08:54
+@Alex Cheema | exo plan to finish this up tonight or tomorrow, been swamped at my regular job
+brightprogrammer — 2024/10/10 12:59
+Hi, I wish to work on #234. Where and how can I start?
+GitHub
+Issues · exo-explore/exo
+Run your own AI cluster at home with everyday devices 📱💻 🖥️⌚ - Issues · exo-explore/exo
+Issues · exo-explore/exo
+NikPoxuha — 2024/10/10 16:33
+Hi guys, 
+
+I wrote a fastapi backend to do performance analytics for exo so you can get better ring partitioning. It uses a statistical model called a dirichlet distribution to help search for optimal weight partitions, https://github.com/nikpocuca/exo-weights-api I kept it seperate from the repo for now.  Dirichlet distribution is a random variate on positive numbers that sum to 1.0. Which makes it perfect for weight partitioning. There's already a test in there for iterative schemes. Let me know what you think
+
+Basically there's too many variables to account for proper weight partitioning becasue people may want different performance metrics. For example the weight partition distribution for optimal latency is not the same as optimal tokens per second. Also as the numbers of nodes in the ring increase, and different generative models start to be released we can just use analytics to find optimal partitioning instead of relying on hard-coded metrics like memory, and latency. 
+
+ Ill be connecting it to a partition class for exo for https://github.com/exo-explore/exo/issues/284, and doing tests today and tomorrow
+GitHub
+GitHub - nikpocuca/exo-weights-api
+Contribute to nikpocuca/exo-weights-api development by creating an account on GitHub.
+GitHub - nikpocuca/exo-weights-api
+GitHub
+Issues · exo-explore/exo
+Run your own AI cluster at home with everyday devices 📱💻 🖥️⌚ - Issues · exo-explore/exo
+Issues · exo-explore/exo
+Alex Cheema | exo — 2024/10/11 05:29
+New bounty added https://github.com/exo-explore/exo/issues/328
+GitHub
+[BOUNTY - $100] Vision Model Integration Test · Issue #328 · exo-ex...
+As expected since we don't have tests for vision models, they broke unexpectedly: #327 Create a test similar to the existing one (chatgpt_api_integration_test_mlx) we have for text in .circleci...
+Alex Cheema | exo — 2024/10/11 05:37
+Already taken. I need to add more bounties
+demand >>>> supply
+Note: We also pay retrospective bounties for good work. If you think something would be valuable to exo, just go ahead and implement it and we will pay a retrospective bounty if it's good. We value experimentation so even if some work does not get merged, you may still be eligible for a bounty.
+If you've completed a bounty and still haven't been paid, please dm me or email me alex@exolabs.net
+Alex Cheema | exo — 2024/10/12 07:56
+assigned!
+@vincent | t0kenl1mit your PR is almost ready I think. I just submitted a last review. If you can fix all the last few outstanding issues then we can merge it in 🙂
+I tried it on CPU on my M3 Max MacBook and it's only ~2x than GPU
+vincent | t0kenl1mit — 2024/10/12 10:13
+Will clean it up but good to hear it will be merged 🚀
+brightprogrammer — 2024/10/12 10:55
+Just as a heads up, I'm new to this, but I want to explore. Hope there's no deadline, because I might take some extra time 🙂
+Alex Cheema | exo — 2024/10/12 22:47
+of course, and dont be afraid to submit something that isn't perfect. speed >> perfection
+JKP — 2024/10/13 15:23
+@Alex Cheema | exo Is this issue assigned to anyone yet? 
+
+Issue 1- https://github.com/exo-explore/exo/issues/249
+Issue 2- https://github.com/exo-explore/exo/issues/215
+GitHub
+[BOUNTY - $100] Add support for LLaVA (tinygrad) · Issue #249 · exo...
+LLaVA support was added for MLX here: #88 However, it wasn't implemented for tinygrad. The ground work was already done in #88 so this should be an easy fix.
+[BOUNTY - $100] Add support for LLaVA (tinygrad) · Issue #249 · exo...
+GitHub
+[BOUNTY - $100] Pixtral Support · Issue #215 · exo-explore/exo
+Mistral just dropped a new vision multimodal model called Pixtral 12b. We already have support for Llava, another VLM. The task is to add support for Pixtral.
+[BOUNTY - $100] Pixtral Support · Issue #215 · exo-explore/exo
+schlime — 2024/10/13 20:43
+I’m doing the first one
+Ji (Cryptotainer) — 2024/10/13 21:33
+generally i would check github for pull requests or comments in the issue. if there is none then leave a comment there and start working on it. 
+Ji (Cryptotainer) — 2024/10/13 21:44
+https://github.com/exo-explore/exo/pull/341 and https://github.com/exo-explore/exo/pull/88 
+JKP — 2024/10/14 15:13
+Thanks for the suggestions
+THeEmpire — 2024/10/16 06:09
+@Alex Cheema | exo 👋 this is Kunwar, we were just talking over email
+taking a look at that issue, it does look like someone is already a decent chunk into the swift/tinygrad implementation
+RockLee_8_gates — 2024/10/16 06:24
+Hello @THeEmpire ,
+I believe you're referring to the issue of compiling tinygrad to Swift (#238) . I'm currently working on this task. I've successfully implemented the functionality and am now in the process of integrating it into Exo's existing workflow. After that, I'll conduct end-to-end testing.
+I welcome any discussions or suggestions on this topic. Please feel free to reach out if you'd like to discuss it further. I'd be glad to exchange ideas and insights.
+vincent | t0kenl1mit — 2024/10/16 15:46
+@Alex Cheema | exo checking if you had a chance to look at pr139 think we are done and good to go with safetensor and layer splittings
+Dan — 2024/10/16 22:07
+can't wait to see this one merged. I think it will go a long way for getting this product working for a lot of folks.
+vincent | t0kenl1mit — 2024/10/17 02:08
+me too but I know Alex and Mo been busy so hopefully soon
+Alex Cheema | exo — 2024/10/17 03:44
+looking again now
+vincent | t0kenl1mit — 2024/10/17 08:05
+fixing pytorch and did a split test not using AutoConfig, it gave me this error
+
+You can't move a model that has some modules offloaded to cpu or disk.
+pytorch killing me
+but this is only with device_map="auto"
+Alex Cheema | exo — 2024/10/17 08:15
+didn't we change this at some point?
+vincent | t0kenl1mit — 2024/10/17 08:33
+we removed it but I am testing with it, looks like using any is not a good way to go at it
+causing errors on my computers and noted it caused errors on your mac
+vincent | t0kenl1mit — 2024/10/17 09:14
+@Alex Cheema | exo idk what happened but when I do it on single computer it works but then I try two nodes and get gibberish... give me an hour ot two and I will fix this now
+this is driving me crazy as it was just working
+then I add in split model and things are breaking but this isn't even split modeling
+vincent | t0kenl1mit — 2024/10/17 09:25
+think it might be threadpooling, fixing it
+Alex Cheema | exo — 2024/10/17 10:18
+Would anyone here find it useful to have a Mac cluster of mac minis / studios for you to ssh into to test things?
+If so I can get that set up
+Pranav — 2024/10/17 10:21
+That would be great Alex
+Also an update, sorry for the delay I am almost done with the stable diffusion. Will do some testing and make a PR
+Alex Cheema | exo — 2024/10/17 10:27
+no worries. thanks for your contributions!!
+Alex Cheema | exo — 2024/10/17 10:33
+Does anyone have a strong opinion on how this should be set up?
+Should we have time slots and simply whitelist public keys for sshing? 
+Fluudgate — 2024/10/17 10:34
+Hi I'm new to the server, could I check if anyone is working on  #283
+
+I would like to contribute and see if I can attempt this feature
+GitHub
+Issues · exo-explore/exo
+Run your own AI cluster at home with everyday devices 📱💻 🖥️⌚ - Issues · exo-explore/exo
+Issues · exo-explore/exo
+Alex Cheema | exo — 2024/10/17 10:36
+nobody is working on this currently. can you write a comment on the issue so i can assign you
+Fluudgate — 2024/10/17 10:37
+sure!
+vincent | t0kenl1mit — 2024/10/17 11:13
+ok think I fixed the issue with pytorch but testing more to double make sure
+schlime — 2024/10/17 11:32
+Prob 2 clusters with 2 in each, maybe 3 in one for wierd shards
+Varshith — 2024/10/18 02:41
+@Alex Cheema | exo please test this out - vision llama, pixtral support and circle integration test (I full tested it end to end works as expected, except the circle ci)
+updated the usage of inferance_tests for mlx - needed it for cross_attention_states in vision llama
+shoutout to @Pranav for the frontend patch
+https://github.com/exo-explore/exo/pull/341/ 
+GitHub
+Llama Vision & Pixtral support by varshith15 · Pull Request #341 · ...
+#215
+#247
+#328
+Llama Vision & Pixtral support by varshith15 · Pull Request #341 · ...
+atharva — 2024/10/18 05:34
+https://github.com/exo-explore/exo/pull/360
+would appreciate if anyone would review my pr and test it
+GitHub
+feat: Parallelise Model Loading by vovw · Pull Request #360 · exo-e...
+test using
+exo --preload-models llama-3.2-1b,llama-3.1-8b
+feat: Parallelise Model Loading by vovw · Pull Request #360 · exo-e...
+toseven — 2024/10/18 10:24
+https://github.com/exo-explore/exo/issues/352 This work is perfect for me. I am familiar with Flutter, Dart, Python, and LLM inference tech. Flutter is an open-source framework for building beautiful, natively compiled, multi-platform applications(windows, Mac, Linux, iOS, and Android) from a single codebase. It has better performance and compatibility than Tauri. We can use Nuitka3 to package Python code into a C/C++ library, which can be called in Flutter with hybrid development technology. @Alex Cheema | exo 
+GitHub
+[BOUNTY - $1000] Get exo Python node running on iOS · Issue #352 · ...
+Background I experimented with a rust-based exo implementation that used UniFFI for foreign language bindings so I could run it from a Swift iOS app. I didn't like this design -- I don't wa...
+[BOUNTY - $1000] Get exo Python node running on iOS · Issue #352 · ...
+vincent | t0kenl1mit — 2024/10/19 09:22
+Doing some improvements on safetensor splitting tonight. Kid took over computer for Roblox but will be back at it
+transhuman_singularitarian — 2024/10/19 15:34
+Dear friends,
+
+Hope you find this message well.
+
+I would like to get assigned on this issue : 
+https://github.com/exo-explore/exo/issues/302
+
+My GitHub username is : bkkavin
+
+Let me know if there is anything I need to know. 
+
+Warm regards, 
+B K Kavin.
+
+(PS: FYI, my 8 year old nerdy younger brother chose my discord username.) 
+GitHub
+[BOUNTY - $1500] Package exo as installable(s) · Issue #302 · exo-e...
+Background Right now exo requires installing python, installing packages with pip and then running the exo command. This is too difficult for people who are non-technical. A lot of the people who w...
+[BOUNTY - $1500] Package exo as installable(s) · Issue #302 · exo-e...
+Alex Cheema | exo — 2024/10/20 03:36
+I think too many people are already working on this one.
+Feel free to take a look through the other bounties to see if there's any that look interesting
+Also remember we have retrospective bounties for good work and experimentation
+atharva — 2024/10/20 04:41
+yoo https://github.com/exo-explore/exo/pull/360
+can i get asaigned to this one will push the req changes in a bit
+GitHub
+feat: Parallelise Model Loading by vovw · Pull Request #360 · exo-e...
+test using
+exo --preload-models llama-3.2-1b,llama-3.1-8b
+vincent | t0kenl1mit — 2024/10/20 19:55
+News from the pytorch inference engine development @ https://github.com/exo-explore/exo/pull/139
+
+After more work and manipulating the safetensor files, it seems that this is grounded in how transformers works with large model loading. 
+
+https://huggingface.co/docs/transformers/v4.21.1/en/main_classes/model#large-model-loading
+
+It will load twice the size of the model into VRAM. For example, I shrunk down the 001 tensor for unsloth--Meta-Llama-3.1-8B-Instruct
+
+Safetensor modified and saved to /home/t0kenl1mit/.cache/huggingface/hub/models--unsloth--
+Meta-Llama-3.1-8B-Instruct/snapshots/4a5a8d99c8319f05d5230cbdccfb56fd0292532e/model-00001-
+of-00004.safetensors
+Initial size: 4.63 GB
+Modified size: 1.38 GB
+
+
+I then loaded the model and still ran into OOM issues even with modifying the model.safetensors.index.json to only load 1 layer
+
+{
+    "metadata": {
+        "total_size": 1486897152
+    },
+    "weight_map": {
+        "model.layers.0.input_layernorm.weight": "model-00001-of-00004.safetensors",
+        "model.layers.0.mlp.down_proj.weight": "model-00001-of-00004.safetensors",
+        "model.layers.0.mlp.gate_proj.weight": "model-00001-of-00004.safetensors",
+        "model.layers.0.mlp.up_proj.weight": "model-00001-of-00004.safetensors",
+        "model.layers.0.post_attention_layernorm.weight": "model-00001-of-00004.safetensor
+s",
+        "model.layers.0.self_attn.k_proj.weight": "model-00001-of-00004.safetensors",
+        "model.layers.0.self_attn.o_proj.weight": "model-00001-of-00004.safetensors",
+        "model.layers.0.self_attn.q_proj.weight": "model-00001-of-00004.safetensors",
+        "model.layers.0.self_attn.v_proj.weight": "model-00001-of-00004.safetensors",
+        "model.embed_tokens.weight": "model-00001-of-00004.safetensors"
+    }
+}
+
+
+Using the newest version of accelerate and low_cpu_mem_usage=True did not help also
+
+CUDA out of memory. Tried to allocate 1.96 GiB. GPU 0 ha
+s a total capacity of 5.79 GiB of which 1.97 GiB is free. Including non-PyTorch memory, th
+is process has 2.89 GiB memory in use. Of the allocated memory 2.77 GiB is allocated by Py
+Torch, and 1.95 MiB is reserved by PyTorch but unallocated.
+
+
+With this method I think you are going to have to at least have double the VRAM for large models. One way I got it to work was to use device_map="auto" but that might cause issues for others. Going to test but will push the latest code with safetensor sharding soon 
+子区
+News from the pytorch inference engine
+21 条消息 ›
+该子区没有最近消息。
+Essentially the model will load twice the modified safetensor no matter what 
+Again, after I am done this, I am going full steam on writing a transformers like library but with a tinygrad backend because this whole transformers thing is bloated
+I've read most of the transformers modeling source code and smh
+transhuman_singularitarian — 2024/10/20 22:40
+Dear Alex,
+
+Hope you find this message well. 
+Is there a time limit/deadline for the retrospective bounty?
+Thanks for your time and everything you do. 🫡
+
+Warm regards,
+B K Kavin.
+Dan — 2024/10/21 00:44
+The vast majority of people working on this repo are gonna be using one primary setup. This means that if you are developing against Macs, you are probably using MLX and not testing against linux. If you are developing on Linux with a GPU, you are probably using tinygrad and not testing anything in MLX. If linux and no GPU, then you are probably developing against torch.
+
+I think that what would be helpful are some basic integration / smoke tests that can be run against a branch, just to check that everything is working, and that can be run with a simple command. For example, I run exo test --branch foobar --email foo@bar.com and it puts my branch on a queue and emails me when all tests pass, on all (basic) setups. The tests don't need to be extensive... it can be as simple as knowing that a basic command returns anything that isn't gibberish.
+子区
+The vast majority of people working on
+3 条消息 ›
+该子区没有最近消息。
+vincent | t0kenl1mit 开始了一个子区：News from the pytorch inference engine。查看所有子区. — 2024/10/21 04:40
+vincent | t0kenl1mit 开始了一个子区：The vast majority of people working on。查看所有子区. — 2024/10/21 08:08
+Varshith — 2024/10/21 14:23
+@Alex Cheema | exo can you please check this PR
+Alex Cheema | exo — 2024/10/22 01:13
+no time limit. is there a specific PR you'd like me to look at?
+transhuman_singularitarian — 2024/10/22 02:29
+Dear Alex, 
+
+Hope you find this message well. 
+
+Glad to hear that there is no time limit. 
+
+Regarding the PR : My future self is yet to email me the patch. 😔.
+
+I'm thinking of making a design plan for how the PR is going to turn out to be. And I would like for you or someone else to look into it and provide guidance & suggestions for improvement. 
+Whom should I contact? Via which platform? 
+
+Warm regards, 
+B K Kavin.
+Alex Cheema | exo — 2024/10/22 03:16
+Which bounty?
+transhuman_singularitarian — 2024/10/22 03:26
+https://github.com/exo-explore/exo/issues/302
+GitHub
+[BOUNTY - $1500] Package exo as installable(s) · Issue #302 · exo-e...
+Background Right now exo requires installing python, installing packages with pip and then running the exo command. This is too difficult for people who are non-technical. A lot of the people who w...
+[BOUNTY - $1500] Package exo as installable(s) · Issue #302 · exo-e...
+Package exo as installable(s)
+Alex Cheema | exo — 2024/10/22 03:26
+I think there are already 2 people working on that one
+atharva — 2024/10/22 03:37
+alex do you want any more changes in this one ??
+https://github.com/exo-explore/exo/pull/360
+GitHub
+feat: Parallelise Model Loading by vovw · Pull Request #360 · exo-e...
+test using
+exo --preload-models llama-3.2-1b,llama-3.1-8b
+feat: Parallelise Model Loading by vovw · Pull Request #360 · exo-e...
+Alex Cheema | exo — 2024/10/23 15:21
+good starter bounty https://github.com/exo-explore/exo/issues/378
+GitHub
+[BOUNTY - $100] Support Llama 3.2 1B on tinygrad · Issue #378 · exo...
+Currently we support Llama 3.2 1B on MLX but not tinygrad Add support for Llama 3.2 1B Might just work out of the box, if not I think the issue will be in the changes that were made to RoPE (Rotary...
+[BOUNTY - $100] Support Llama 3.2 1B on tinygrad · Issue #378 · exo...
+Alex Cheema | exo — 2024/10/24 07:48
+Merged manual discovery - you can now manually specify a network topology that will be used instead of automatic node discovery https://github.com/exo-explore/exo/pull/368
+GitHub
+Manual networking with configuration files by ianpaul10 · Pull Requ...
+Ref: #279
+This PR includes the following changes:
+
+adds manual option to --discovery-module command flag
+adds a new --discovery-config-path command flag to point to a json config file outlining the...
+Manual networking with configuration files by ianpaul10 · Pull Requ...
+Added a follow-up bounty too! https://github.com/exo-explore/exo/issues/380
+GitHub
+[BOUNTY - $100] Support changing manual configuration while running...
+#368 added support for manual configuration but if you update the configuration file while exo is running it won't update. This should be a simple fix, hence $100 bounty.
+[BOUNTY - $100] Support changing manual configuration while running...
+Quantum — 2024/10/28 01:28
+Hey, wondering if I could get a review on https://github.com/exo-explore/exo/pull/297
+
+Thanks!
+GitHub
+Dynamic TFLOPS Calculation by snico432 · Pull Request #297 · exo-ex...
+I attempted to implement a dynamic TFLOPS calculation (in response to #243) as a fallback in case the device is not found in the lookup table. I know that PyTorch is not yet a dependency for the pr...
+Dynamic TFLOPS Calculation by snico432 · Pull Request #297 · exo-ex...
+Rahat|Mentor — 2024/10/28 02:25
+@Alex Cheema | exo PTAL - https://github.com/exo-explore/exo/issues/325 (bounty)
+GitHub
+[BOUNTY - $100] DummyInferenceEngine · Issue #325 · exo-explore/exo
+We support several InferenceEngine implementations including MLX, tinygrad and PyTorch Sometimes you want to test everything except the inference itself It would be helpful to have a DummyInference...
+[BOUNTY - $100] DummyInferenceEngine · Issue #325 · exo-explore/exo
+Varshith — 2024/10/28 14:53
+hey @Alex Cheema | exo  PRM: https://github.com/exo-explore/exo/pull/341/
+been open for a couple of weeks now, please 
+GitHub
+Vision Llama, Pixtral support and Vision integration test by varshi...
+#215
+#247
+#328
+Vision Llama, Pixtral support and Vision integration test by varshi...
+logan│exo — 2024/10/29 00:12
+Hey @Varshith we are closing this issue + pr. exo is moving away from vision models. That being said, you will still be paid for your work. if you have an eth wallet address, DM it to @Alex Cheema | exo 
+eneserciyes — 2024/10/29 00:26
+Does this mean the bounties on Llava tinygrad  and Stable diffusion are gonna be put on hold ?
+logan│exo — 2024/10/29 01:24
+yes. just language models for now 
+Varshith — 2024/10/29 02:16
+ah bummer, got it
+sent the email @Alex Cheema | exo 
+Alex Cheema | exo — 2024/10/30 12:27
+We will support vision later but priority right now is getting the core LLM functionality stable!
+sussik — 2024/10/30 13:03
+Hey all! This project looks super cool and I would like to help out with some of the bounties. Is there a more formal way of doing thinds or do I just make a pull request with my changes?
+larson_carter — 2024/10/30 13:24
+Just comment on an issue and then typically Alex will assign it to you. However just make a Pr and you’ll be good to go
+larson_carter — 2024/10/30 13:25
+Might be best to navigate by unassigned issues so far
+sussik — 2024/10/30 13:25
+Thanks!
+bobfin21 — 2024/10/31 05:57
+what is the best way to ask for advice/clarification on a given bounty? Ask on the issue page, ask here, or open a PR with what I have so far and then ask in the PR?
+Alex Cheema | exo — 2024/11/1 04:52
+in this channel is best
+bobfin21 — 2024/11/1 05:10
+I would like to work on https://github.com/exo-explore/exo/issues/307 and I could use some pointers. I've been poking around chatgptAPI but I'm not exactly sure where/when to trigger the cancellation of process_prompt. Any suggestions are appreciated.
+
+while looking, I did notice that exo defaults to smallest model in tinychat, but not with the API. I'm opening a PR for this right now
+bobfin21 — 2024/11/1 05:18
+https://github.com/exo-explore/exo/pull/403
+Alex Cheema | exo — 2024/11/1 06:40
+Replied on the PR
+Alex Cheema | exo — 2024/11/1 06:41
+It's actually quite involved since multiple machines are working on the request at a time.
+bobfin21 — 2024/11/1 06:48
+ok makes sense. Maybe we can start with working on getting the inference step to be cancellable? 
+Would that be less involved?
+Quantum — 2024/11/1 07:55
+Took a shot at lazy loading DeviceCapabilities
+
+https://github.com/exo-explore/exo/pull/297
+GitHub
+Dynamic TFLOPS Calculation by snico432 · Pull Request #297 · exo-ex...
+I attempted to implement a dynamic TFLOPS calculation (in response to #243) as a fallback in case the device is not found in the lookup table. I know that PyTorch is not yet a dependency for the pr...
+Dynamic TFLOPS Calculation by snico432 · Pull Request #297 · exo-ex...
+sussik — 2024/11/1 08:17
+Are there existing benchmarks for testing? Or I could create a small test suite. I am working on adding quantized models to tinygrad and would benefit from having a way to compare a bunch of models using different quantization methods
+vincent | t0kenl1mit — 2024/11/1 21:29
+Right now each inference engine has it own custom and standard inference engine test, standardizing it all would be good. Just need something you can plug an inference engine name in with model and test
+sussik — 2024/11/2 02:41
+yeah. I was thinking that plus having code to profile performance
+Varshith — 2024/11/3 02:28
+has anyone worked with tinygrad? i want to understand how matmul code gen happens for each hardware
+sussik — 2024/11/5 05:33
+@Alex Cheema | exo I have attempted:https://github.com/exo-explore/exo/issues/148
+I tested it with the llama3.1-8b model e.g for the prompt "What is the meaning of exo? " 
+I got 17963MB, 11605MB and 9507MB memory utilization with no quantization,int8 and nf4 respectively. I plan on running the same test with the 70B model once I have access to a larger machine. Do I need to run more tests before making the PR?
+GitHub
+[BOUNTY - $300] Add support for quantized models with tinygrad · Is...
+The deliverable here is to be able to run quantized models with the tinygrad inference engine Bonus (+$200) bounty as an easy follow up is to add support for MLX community models: #200 This already...
+[BOUNTY - $300] Add support for quantized models with tinygrad · Is...
+Alex Cheema | exo — 2024/11/6 03:50
+this is awesome!
+the memory utilisation for nf4 seems high tho
+ideally write a circleci test for nf4
+sussik — 2024/11/6 04:50
+Thanks! What about the concern @Varshith had?
+Varshith — 2024/11/6 04:52
+mentioned here
+schlime — 2024/11/6 06:46
+I implemented mamba and samba in tinygrad. Is there interest in supporting an architecture other than transformers for the language models to show versatility?
+Alex Cheema | exo — 2024/11/6 08:01
+Yeah just took a look at his PR. Looks like it doesn't quite solve the issue - we want to support already quantized models.
+peanuter — 2024/11/6 08:59
+@sussik when you have an opportunity kindly check your dm's
+Quantum — 2024/11/6 09:31
+@Alex Cheema | exo I attempted to implement lazy loading for DeviceCapabilities, PTAL
+
+https://github.com/exo-explore/exo/pull/297
+GitHub
+Dynamic TFLOPS Calculation by snico432 · Pull Request #297 · exo-ex...
+I attempted to implement a dynamic TFLOPS calculation (in response to #243) as a fallback in case the device is not found in the lookup table. I know that PyTorch is not yet a dependency for the pr...
+Dynamic TFLOPS Calculation by snico432 · Pull Request #297 · exo-ex...
+sussik — 2024/11/6 11:23
+Bit confused about what you are looking for
+peanuter — 2024/11/6 16:10
+I'm going to send you a little money for completing this. I really wanted it. So I am asking for your paypal address.
+sussik — 2024/11/6 19:18
+Thanks, but it turns out I misunderstood the requirements so it’s not complete
+sussik — 2024/11/6 19:22
+Yeah, might be worth clarifying it on the issue. I think the tinygrad example is quantizing on the fly so I got tripped up. But Exo is building on top of tiny grad, not replicating it. My bad!
+Alex Cheema | exo — 2024/11/7 01:40
+updated the desc https://github.com/exo-explore/exo/issues/148
+GitHub
+[BOUNTY - $300] Add support for quantized models with tinygrad · Is...
+The deliverable here is to be able to run existing quantized models with the tinygrad inference engine Bonus (+$200) bounty as an easy follow up is to add support for MLX community models: #200
+[BOUNTY - $300] Add support for quantized models with tinygrad · Is...
+Varshith — 2024/11/7 03:32
+ill sit with this over the weekend and try to get mlx quantized models working
+Varshith — 2024/11/7 03:33
+@Alex Cheema | exo i think you should list out some models you want us to get working, there are many quantization formats, other than mlx
+Alex Cheema | exo — 2024/11/8 14:04
+Please ping me if you'd like me to look at a PR. 
+mooshe — 2024/11/10 09:12
+An annoying ask, but is there a way we could sync up the current bounties sheet and update it with those that have been picked up? It seems a fair amount of "Available" bounties are actually being worked on when you look at the GH issue
+roryclear — 2024/11/10 11:56
+I just got jit working on ios today, much faster already @Alex Cheema | exo
+图片
+https://github.com/tinygrad/tinygrad/compare/master...roryclear:tinygrad:ios_3
+GitHub
+Comparing tinygrad:master...roryclear:ios_3 · tinygrad/tinygrad
+You like pytorch? You like micrograd? You love tinygrad! ❤️ - Comparing tinygrad:master...roryclear:ios_3 · tinygrad/tinygrad
+Comparing tinygrad:master...roryclear:ios_3 · tinygrad/tinygrad
+Sami | exo — 2024/11/10 15:36
++1
+Alex Cheema | exo — 2024/11/10 15:48
+Dude, if this works in exo I'll bump up the bounty payment to $2000 - that's really awesome work
+Do you know if it's possible to search kernels with this? @roryclear
+roryclear — 2024/11/10 19:50
+I think I'd need to add elapsed_time for that, I'll give it a try
+and does this (or what does?) constitute the first $500 of https://github.com/exo-explore/exo/issues/238 ?
+GitHub
+[BOUNTY - $1000] Compile tinygrad to swift · Issue #238 · exo-explo...
+I want to keep exo 100% python if possible Would like to compile swift or objc inference code in tinygrad The deliverable here is a merged PR in tinygrad and a small demonstration in exo of how thi...
+[BOUNTY - $1000] Compile tinygrad to swift · Issue #238 · exo-explo...
+roryclear — 2024/11/10 19:58
+I would accept that payment in the form of an equivalent valued mac if you have any lying around too. I've only one computer that can run exo right now, so figuring out exo and getting iOS working on it is tricky 
+roryclear — 2024/11/11 23:27
+it can now
+Alex Cheema | exo — 2024/11/12 00:02
+So if I get this right, it can find the best kernel using tinygrad's BEAM or MCTS search that run on iOS?
+roryclear — 2024/11/12 02:23
+yeah, works the same way Metal's does
+图片
+If you want to try run it, it should just be a case of opening the iOS app, hardcoding the iOS device's IP address in ops_ios, and running tinygrad with IOS=1. Any weight files used will need to be copied into the xcode project too for now
+Alex Cheema | exo — 2024/11/14 20:04
+Just bumped this bounty up to $500! Would be really great to have this.
+https://github.com/exo-explore/exo/issues/148
+GitHub
+[BOUNTY - $500] Add support for quantized models with tinygrad · Is...
+The deliverable here is to be able to run existing quantized models with the tinygrad inference engine Bonus (+$200) bounty as an easy follow up is to add support for MLX community models: #200
+[BOUNTY - $500] Add support for quantized models with tinygrad · Is...
+Alex Cheema | exo — 2024/11/15 15:23
+$500 bounty added for FLUX support with the MLX backend: https://github.com/exo-explore/exo/issues/461
+GitHub
+[BOUNTY - $500] FLUX Support · Issue #461 · exo-explore/exo
+Add support for this model with the MLX backend: https://huggingface.co/black-forest-labs/FLUX.1-dev There's already an example of FLUX using MLX here: https://github.com/ml-explore/mlx-example...
+[BOUNTY - $500] FLUX Support · Issue #461 · exo-explore/exo
+roryclear — 2024/11/16 02:00
+@Alex Cheema | exo what else is needed for the first $500 of https://github.com/exo-explore/exo/issues/238 ?
+GitHub
+[BOUNTY - $1000] Compile tinygrad to swift · Issue #238 · exo-explo...
+I want to keep exo 100% python if possible Would like to compile swift or objc inference code in tinygrad The deliverable here is a merged PR in tinygrad and a small demonstration in exo of how thi...
+[BOUNTY - $1000] Compile tinygrad to swift · Issue #238 · exo-explo...
+roryclear — 2024/11/17 22:36
+Ok Idk what to do, I’ve asked twice now if there’s anything more I need to do for this bounty
+I am quite confident I can get iOS nodes working for the next bounty but I do realistically need another Mac to do it. I’d rather not buy a new computer and do all the work only for this to happen again
+Alex Cheema | exo — 2024/11/17 23:10
+what device do you need to make progress?
+can give ssh access to one of exo's devices
+roryclear — 2024/11/17 23:22
+for 238 I don't need anything, I've completed that as far as I know
+roryclear — 2024/11/17 23:30
+#352 iOS node bounty is separate, I would just need another mac on my local network to help with reverse engineering exo's networking, ideally I buy that with $500 from doing #238 but I don't know where that stands now
+extra compute over ssh wouldn't help but thanks for the offer
+roryclear — 2024/11/18 02:26
+I've done this, just want to be paid (or told why not at least). I'm not starting another bounty if I'm not gonna get paid for either, especially one that requires me to buy new hardware.
+图片
+图片
+Alex Cheema | exo — 2024/11/18 15:02
+Of course. We've paid out $6K in bounties so far. ~Half of that was retrospective (i.e. bounties were awarded to recognise good work even though there was no explicit bounty). You will always be paid fairly for work you do on exo.
+
+It's a little hard to track what the latest status is since there's no PR.
+In the issue, the last thing you said was "I'm going to try also get this working with grpc and have iOS behave like any other device in tinygrad, rather than compiling everything before running"
+
+The bounty states the following deliverables:
+
+1. Swift or objc code generated from tinygrad running on iOS
+2. A new InferenceEngine implementation in exo (Python) that can trigger the execution of models by executing the generated swift or objc code. This can be demonstrated on a Mac
+
+
+I understand that the code for 1 is entirely in tinygrad so there won't be a merged PR for that (however creating a PR into your own fork's main branch would be helpful so I can leave comments). There should be a PR for 2 in the exo repo.
+roryclear — 2024/11/18 21:09
+yeah sorry, I've been updating progress on this discord instead of the github issue. I'll use that if preferred
+I did what I said I would on the comment, only with requests instead of grpc
+good idea on PR to my own fork, I didn't think of that. Here's one now https://github.com/roryclear/tinygrad/pull/1 I'll post on the issue too
+GitHub
+Ios in tinygrad by roryclear · Pull Request #1 · roryclear/tinygrad
+Ios in tinygrad by roryclear · Pull Request #1 · roryclear/tinygrad
+If I need to demo or go over anything with you I can do that whenever
+Alex Cheema | exo — 2024/11/18 22:09
+Left a review on here.
+roryclear — 2024/11/20 05:20
+I've changed and/or responded to all comments thanks,  take another look when you get a moment pls
+Pranav — 2024/11/20 12:33
+Does anyone know why my input tensor is getting added an extra dim while infer tensor in mlx?
+Alex Cheema | exo — 2024/11/20 17:29
+tempted to insta-merge this based on the PFP https://github.com/exo-explore/exo/pull/475
+GitHub
+Support local model with inference-engine mlx by OKHand-Zy · Pull R...
+Enhancement: support local and custom models #165
+This is a modified version of the code that I&#39;ve made functional, although the code quality may not be ideal. It supports running local pat...
+Support local model with inference-engine mlx by OKHand-Zy · Pull R...
+roryclear — 2024/11/22 23:46
+Any plan to update the tinygrad version exo is using? My iOS stuff is forked from a more recent version of tinygrad which doesn’t work in exo right now
+I can try doing this myself, there will be a free speed upgrade with it
+Alternatively, I could rewrite the iOS fork based on exo’s tinygrad version, I'm not too keen on doing that though lol
+Alex Cheema | exo — 2024/11/23 01:19
+Seems much better to keep moving forward and get exo working with latest tinygrad
+Will also award a $200 bounty for getting exo to work with latest tinygrad
+roryclear — 2024/11/23 23:02
+I tried this yesterday, fewer changes needed than I initially thought..
+roryclear — 2024/11/23 23:12
+iOS technically works on exo now if you use my fork in setup.py in that PR, as a tinygrad device though, not a node. So it replaces a machine in a cluster, if you got a slow computer and a fast ipad I guess it could already speed up inference
+I was getting garbage outputs (after one good output for the first prompt) from llama yesterday on main when using tinygrad through exo instead of mlx, haven't looked into why yet 
+larson_carter — 2024/11/26 10:03
+I think it would be neat to see a bounty for docs. 
+
+I mean detailed docs. If this is possible I’d like to be the maintainer of the networking section.
+bobfin21 — 2024/11/26 13:25
+got sphinx set up on a branch here https://github.com/maujim/exo/tree/docs-v1?tab=readme-ov-file#generating-local-documentation 
+Alex Cheema | exo — 2024/11/26 16:42
+yeah as we move towards a more interoperable protocol it makes sense to have docs for devs
+right now it's very hard to build on top of exo in general so it wouldn't really help
+Lito — 2024/11/26 18:17
+I would appreciate that a lot.
+larson_carter — 2024/11/26 18:17
+I think a lot of people would. Seems to be a common issue
+OKHand — 2024/11/26 21:03
+I also agree that having detailed documentation for tasks like DEBUG or related development projects is important, as the most time-consuming part of debugging for me is reading all potentially relevant code files.
+
+Currently, I don’t understand which type of functionality output each DEBUG level from 1 to 9 is defined for.
+
+If I overlooked something, I apologize. Otherwise, I think it would be helpful to define which functionalities belong to each DEBUG level.
+roryclear — 2024/12/3 22:54
+I’m gonna try get iOS stuff working with tinygrad’s cloud ops, might make getting something merged more likely
+图片
+I think issue #500 will make anything using tinygrad slow or wrong for now
+natz — 2024/12/6 19:58
+i can make the AI go bonkers !! and it keeps giving out tokens ... 
+图片
+vincent | t0kenl1mit — 2024/12/7 08:42
+Stop token not being hit
+roryclear — 2024/12/18 22:57
+I haven't got this btw, I don't wanna send my goons to exo hq 😂
+图片
+Proto | AI — 2024/12/19 01:20
+this is when the setup is broken.  Either a memory overlap, or something else incorrect. i’ve seen this many times before, but it rarely happens now, only if I’m reprovisioning the cluster or doing some other kind of complex stuff where not everything is synchronized.
+
+Make sure to close all EXO instances, and then open them back up again.
+
+Make sure you’re in a VENV, for each instance
+Alex Cheema | exo — 2024/12/19 19:28
+Processing bounties this weekend!
+roryclear — 2024/12/19 20:05
+no prob
+OKHand — 2024/12/24 21:26
+This is my PR (https://github.com/exo-explore/exo/pull/475#issuecomment-2560588450).
+I've tested and believe the MLX local model support is now implemented.
+
+However, I encountered an unexpected issue during the process.
+I initially attempted to follow the original approach: first downloading files such as token_config.json to establish the shard tokenizers, and then downloading the complete set of files before performing inference. This method, however, led to problems with the inference process.
+
+Subsequently, I tried downloading all the files at once from the beginning, and this approach resolved the inference issues entirely.
+I'm at a loss as to why this discrepancy occurs.
+
+Therefore, I opted not to use the filter_repo_objects function for the local model implementation.
+vincent | t0kenl1mit — 2024/12/27 21:22
+still waiting on a review for mine from last month, going to update my fork though with the changes today but let me know as have no feedback yet https://github.com/exo-explore/exo/pull/139
+GitHub
+[Bounty] PyTorch & HuggingFace Interface by risingsunomi · Pull Req...
+Hello all,
+I’ve made some updates to the exo library based on the bounty mentioned in this tweet/X post. These changes aim to integrate PyTorch and expand access to various language models through ...
+[Bounty] PyTorch & HuggingFace Interface by risingsunomi · Pull Req...
+子区
+[Bounty] PyTorch & HuggingFace Interface...
+3 条消息 ›
+vincent | t0kenl1mit
+4 天前
+Ian — 2024/12/28 13:40
+Also bumping my PR from last month, addressed all comments and freshly rebased to main https://github.com/exo-explore/exo/pull/383
+GitHub
+Support changing manual configuration while running by ianpaul10 · ...
+Ref #380
+
+Load config at the start of each find task
+Only load config and return the new values if the file&#39;s getmtime has been updated, otherwise return the cached peers
+If anything fails ...
+Support changing manual configuration while running by ianpaul10 · ...
+qm8 — 2024/12/29 03:30
+Hey there; After some tinkering https://github.com/exo-explore/exo/issues/461 works on my m4 16gb; how long is this bounty assigned to the other guys?
+GitHub
+[BOUNTY - $500] FLUX Support · Issue #461 · exo-explore/exo
+Add support for this model with the MLX backend: https://huggingface.co/black-forest-labs/FLUX.1-dev There's already an example of FLUX using MLX here: https://github.com/ml-explore/mlx-example...
+[BOUNTY - $500] FLUX Support · Issue #461 · exo-explore/exo
+Mohamed | exo — 2024/12/29 04:21
+These will all be processed soon. Things are a quite busy right with the 12 days announcements
+Alex Cheema | exo 开始了一个子区：[Bounty] PyTorch & HuggingFace Interface...。查看所有子区. — 2024/12/29 06:32
+Alex Cheema | exo — 2024/12/29 06:32
+Merged
+Alex Cheema | exo — 2024/12/29 06:32
+Can you link to your PR?
+bobfin21 — 今天12:33
+@Alex Cheema | exo will there be bounties for private search as well? I have a background in search (at Brave) and I'd love to work on this

@@ -1,0 +1,5 @@
+https://blog.exolabs.net/day-4/
+
+这部分代码提示了exo可能出现的一个错误来源：
+https://github.com/exo-explore/exo/blob/db9f44d16db8e393e528bc9494a7b601cbf3d5f0/exo/networking/grpc/grpc_server.py#L56
+grpc 在传输时，是先将张量转成 numpy 的 tobytes() 的，这里可能出现转换之后传输问题。
