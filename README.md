@@ -1,9 +1,11 @@
 # SelfLearnAssis_BasedOnLanguageModel
 
 ### 项目目的
-做一个工具（包含若干小工具），1）方便快速学习所搜集、汇聚来的资料；2）方便整理处理过的资料；同时方便读者、家入快速跟进知识体系。
-整理出来的资料以问答对的形式、或文档整合形式（问答太多时）呈现出来; 4）记录配置和开发的过程以及问题解决过程。 5）作为大模型、Agent这些发展迅速的领域的观察总结以及项目练手<br>
-这个项目利用自建的工具所搜集的资料，其主要内容都是围绕 “Agent 的构建方式”和“使用这些Agent所需的基础设施如何构建”的。<br>
+围绕Agents技术：<br>
+1. 做一个工具（包含若干小工具），1）方便快速学习所搜集、汇聚来的资料；2）方便整理处理过的资料；同时方便读者、家入快速跟进知识体系。整理出来的资料以问答对的形式、或文档整合形式（问答太多时）呈现出来; 4）记录配置和开发的过程以及问题解决过程。 5）作为大模型、Agent这些发展迅速的领域的观察总结以及项目练手<br>
+2. 利用自建的工具所搜集的资料整理成若干文档集、代码项目，其主要内容都是围绕 “Agent 的构建方式”和“使用这些Agent所需的基础设施如何构建”的。<br><br>
+
+### 围绕Agents的文档大纲
 关于Agent 和构建这些Agent所需的基础设施的文档简要大纲： <br>
 <br>
 借用metagpt 的老图作为 单Agent 的定义架构：<br>
@@ -15,7 +17,7 @@
 1. 观察：<br> 
 在原始的 metagpt 架构中各个单智能体通过接收上下游智能体发出的文字context信息+自己的记忆memory，来完成observe这个动作。<br>
 主流的努力方向主要聚焦多模态输入，希望通过扩充输入模态，模拟人类的观察行为，更加全面的观察周围环境，用于后续决策。<br>
-目前这个项目中的观察模块除了memory 和 context信息外，使用MiniCPM 的模型来扩充额外输入，文档见：  <br>
+目前这个项目中的观察模块除了memory 和 context信息外，主要还使用了 MiniCPM 的模型来扩充额外输入，文档见：  <br>
 2. 思考：<br>
 关于AI做决策和逻辑思考能力的相关总结文档：  <br>
 3. 行动：<br>
@@ -24,12 +26,21 @@ NOTE：1)11月开始学习开发RAG等相关功能，12月底时才发现豆包A
 2)另外，用于爬取、搜集信息的工具也有推荐使用的开源工具补充：  <br>
 3)关于各模型的编码能力，结合网上的测试和我稍微做了一点测试。 <br>
 4. 记忆：<br>
-记忆模块在我理解中多用RAG接外接数据库来实现。<br>
+记忆模块分长短期，在我理解中:短期多用上下文context，长期多用RAG接外接数据库来实现。<br>
 同时也有修改网络结构实现修改网络记忆能力的实现与研究，见(这一模块同时要参考上面决策与逻辑的文档):  <br>
 5. 此外，本工程开发所基于的基础设施构建方式，见：<br>
 6. 多智能体相关开发与研究：<br>
 
-### 环境 & requirements
+
+### 围绕 Agents 的技术栈
+这里总结的都是截至到 2024年12月底为止的知识。
+#### 模型服务
+#### 存储
+#### 工具、库
+#### Agent框架
+#### Agent托管和Agent服务
+
+### 这个项目所需配置的环境 & requirements
 需要安装 metagpt ，安装方法见 https://docs.deepwisdom.ai/main/zh/guide/get_started/installation.html<br>
 建议python <=3.12  >=3.9<br>
 其他的见 requirements.txt<br>
@@ -61,7 +72,7 @@ Windows系统有最长路径限制，这可能导致安装失败。可以通过�
     目前的问题：1）对比市面上的国产大模型对话机器人仍有召回率低的问题，在两方面：细微用词偏差仍然有概率导致返回结果不准确，预计通过rerank增强context语境理解能力的方式可以解决这个问题。目前初步满足当下的学习需求；2）对于总结性的问题表现没有对于细节问题的把控表现好。可能需要通过重构summary功能的放入来接解决。<br>
 
 ### 其他功能工具
-1. 自动写代码：./CodeWriter
+1. 简单自动写代码：./CodeWriter
 2. 爬虫&搜集信息：./ScrapyAssistant
 3. 自动写文档：./TechDocAssistant
 4. 视频下载 & 视频音频转文字：搜集资料及使用RAG时，有视频资源，如./RAGTool/file/systemDesign 。为了方便归为文档资料，使用 [ScrapVideo.py, splitMp4Audio.py, Audio2text.py] 将视频资源转化为文档资料。其中音频转文档使用的是 Whisper 的模型 'distil-whisper/distil-small.en'; 值得一提，这个模型的采样频率是16000，因此需要将输入的音频频率也重采样到 16000
@@ -73,3 +84,4 @@ Windows系统有最长路径限制，这可能导致安装失败。可以通过�
 4. user interface for friends to visit
 5. multi-tier system inserting into RAG DB(url), agent self motivated visiting url, incase lacking of information
 6. bilibili input
+
