@@ -31,7 +31,7 @@ npm WARN EBADENGINE   current: { node: 'v12.22.9', npm: '8.5.1' }<br>
 npm WARN EBADENGINE }<br>
 <br>
 安装方法：<br>
-去nodejs官网下载node-v18.20.5-linux-x64.tar.xz，然后执行以下命令：<br>
+MiniCPM官方给出的nodejs配置方式走不通，这里提供一种可行方法，去nodejs官网下载node-v18.20.5-linux-x64.tar.xz，然后执行以下命令：<br>
 1. 使用 tar 命令解压 node-v18.20.5-linux-x64.tar.xz     ；tar -xf node-v18.20.5-linux-x64.tar.xz
 2. echo 'export PATH=/usr/local/nodejs/bin:$PATH' >> ~/.bashrc
 source ~/.bashrc
