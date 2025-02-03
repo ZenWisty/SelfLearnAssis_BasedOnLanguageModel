@@ -5,7 +5,7 @@
 platform: Linux/Windows<br>
 推理支持框架：vllm/transformers<br>
 ### 环境：
-最好参照官方给的 python=3.10: <br>
+最好参照官方给的 python=3.10,这里用anaconda创建虚拟环境: <br>
 conda create -n minicpmo python==3.10<br>
 git clone https://github.com/OpenBMB/MiniCPM-o.git<br>
 cd MiniCPM-o<br>
