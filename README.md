@@ -10,7 +10,7 @@
 <br>
 借用metagpt 的老图作为 单Agent 的定义架构：<br>
 单智能体 = LLM + 观察 + 思考 + 行动 (+ 记忆) <br>
-![image](./doc/agent_run_flowchart.6c04f3a2.png)
+<img src="./doc/agent_run_flowchart.6c04f3a2.png" alt="流程图" width="622" height="548"><br>
 本工程中构建的单智能体也是参照这个架构来构建的。<br>
 其中的每一个模块（观察、思考、行动、记忆）都可以依赖或不依赖大模型。
 拆分说明每一个模块：<br>
@@ -19,7 +19,7 @@
 主流的努力方向主要聚焦多模态输入，希望通过扩充输入模态，模拟人类的观察行为，更加全面的观察周围环境，用于后续决策。<br>
 目前这个项目中的观察模块除了memory 和 context信息外，主要还使用了 MiniCPM 的模型来扩充额外输入。因为它的模型大小适宜，方便我在家里部署agent的backend。目前并未测试这个模型的能力边界。<br>MiniCPM-o是架构类似clip的多模态模型，其中的语言模型主干取自千问。关于多模态输入的MiniCPM-o模型的效果，这里给一个直观的效果：<br>
 >>> 输入：<br>
-![image](./doc/two_cats.jpeg)<br>
+<img src="./doc/two_cats.jpeg" alt="小猫" width="180" height="228"><br>
 这是两只什么动物？猜测一下这两只动物之间是什么关系<br>
 >>> 输出：<br>  
 这张图片展示的是两只小猫。它们看起来非常亲密，可能是一对兄弟姐妹或者是一对母子。<br>
@@ -35,8 +35,7 @@ NOTE：1)11月开始学习开发RAG等相关功能，12月底时才发现豆包A
 4. 记忆：<br>
 记忆模块分长短期，在我理解中:短期多用上下文context，长期多用RAG接外接数据库来实现。<br>
 同时也有修改网络结构实现修改网络记忆能力的实现与研究，见(这一模块同时要参考上面决策与逻辑的文档):  <br>
-5. 此外，这个学习工程中，遵循尽量将大模型 backend 部署在自己本地的方式。因此agent各个模块的选择偏好量化过的或者轻量的。这里我主要聚焦于方便部署的两个技术，即llama.cpp 和 最近流行的微型分布式部署框架exo，关于llama.cpp技术的详细解读见：；关于exo的实践过程和工程解读见：<br>
-6. 多智能体相关开发与研究：<br>
+5. 多智能体相关开发与研究：<br>
 
 
 ### 围绕 Agents 的技术栈
@@ -47,7 +46,10 @@ NOTE：1)11月开始学习开发RAG等相关功能，12月底时才发现豆包A
 #### Agent框架
 #### Agent托管和Agent服务
 
-### 这个项目所需配置的环境 & requirements
+### Agents本地部署的相关路径和准备
+除了围绕Agents的实现之外，这个学习工程的实践过程中，遵循尽量将大模型 backend 部署在自己本地的方式。因此agent各个模块的选择偏好量化过的或者轻量的。这里我主要聚焦于方便部署的两个技术，即llama.cpp 和 最近流行的微型分布式部署框架exo，关于llama.cpp技术的详细解读见：；关于exo的实践过程和工程解读见：<br>
+
+### 这个项目所基于的Agent框架的环境配置 & requirements
 需要安装 metagpt ，安装方法见 https://docs.deepwisdom.ai/main/zh/guide/get_started/installation.html<br>
 建议python <=3.12  >=3.9<br>
 其他的见 requirements.txt<br>
@@ -61,22 +63,19 @@ Windows系统有最长路径限制，这可能导致安装失败。可以通过�
 然后重新运行一遍安装命令即可<br>
 <br>
 
-### Release功能
+### Released Tool & 功能细节
 1. RAG system implementing <br>
-    使用案例见 ./RAGTool/Readme.md 中的详细使用记录(基于需要文件资料库的问答被记录了下来，当问答不准确时有纠正的问答对，可用作后续reranker和LLM的训练) <br>
-
-2. dpo learning inserting <br>
-    案例见 ./RAGTool/dpo/dpo.py<br>
-
-
-### 功能细节
-1. RAG system: <br>
+    使用案例见 [./RAGTool/Readme.md](./RAGTool/Readme.md) 中的详细使用记录(基于需要文件资料库的问答被记录了下来，当问答不准确时有纠正的问答对，可用作后续reranker和LLM的训练) <br>
+    功能细节: <br>
     RAG system 中向量库主要由 FAISSVectorIndex，FAISSINDEXRetriver（faiss.IndexFlatL2）构成。<br>
     其中的向量编码模型（embedding model）根据 benchmark ：https://huggingface.co/spaces/mteb/leaderboard ， 选择了'sentence-transformers/all-MiniLM-L6-v2' ；<br>
     程序启动时，自动根据给定的地址中的所有文件构建database，进而构建RAG系统以及围绕RAG系统的问答系统；<br>
     操作界面基于实时对话，可在其中询问有关资料库的问题<br>
     注意：1）因为使用LLM Reranker，如果LLM回答的不对，可能会遇到IndexError: list index out of range；这个问题可能出现且暂时无法避免；2）目前我在大多数的学习案例和问答过程中使用了mistral-7b 的模型，其编程和理解代码的能力，在牵涉到代码细节的时候不能很好的给出解答（理解和推理），可以用新的code rag rerank 或者 底层换为gpt-4o解决。<br>
     目前的问题：1）对比市面上的国产大模型对话机器人仍有召回率低的问题，在两方面：细微用词偏差仍然有概率导致返回结果不准确，预计通过rerank增强context语境理解能力的方式可以解决这个问题。目前初步满足当下的学习需求；2）对于总结性的问题表现没有对于细节问题的把控表现好。可能需要通过重构summary功能的放入来接解决。<br>
+
+2. dpo learning inserting <br>
+    案例见 [./RAGTool/dpo/dpo.py](./RAGTool/dpo/dpo.py)<br>
 
 ### 其他功能工具
 1. 简单自动写代码：./CodeWriter
