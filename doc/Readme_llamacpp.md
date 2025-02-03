@@ -2,8 +2,7 @@
 llama.cpp 是一个简洁、强大的大语言模型（不止llama，支持多种）部署框架，它基于ggml工程搭建，包含了量化、分布式部署等技术栈。llama.cpp 项目在github上十分活跃，更新速度很快。因此这里采用的学习路径是借用一个直观的例子脚本，即llama.cpp/examples/simple.cpp 来解读源码和说明。这个例子包含了llamacpp部署推理时大部分的主要功能。
 
 ## 环境配置
-llama.cpp 的环境配置相对来说简单：我拿的是github上的 afa8a9ec9b520137bbd1ca6838cda93ee39baf20 版本。
-删除根目录下的 CMakePresets.json；<br>
+llama.cpp 的环境配置相对来说简单：我拿的是github上的 afa8a9ec9b520137bbd1ca6838cda93ee39baf20 版本；<br>
 我默认是使用GPU backend的。切换到ggml目录下的CMakeLists.txt，将其中的第143行：<br>
 option(GGML_CUDA                            "ggml: use CUDA"                                  OFF)<br>
 改为:<br>
@@ -54,6 +53,8 @@ LLAMA_SPLIT_MODE_ROW   = 2, // 将 layers 和 KV cache 在 GPU 之间 分布式�
 ```
 ### llama_model_load_from_file
 llama_model_load_from_file 比较重要，其中会新建一个 llama_model 类，参数都是初始化的，tensor赋值和参数赋值会留到之后；但是llama_model 依然包含一些重要的内容： llama_model 中包含了一个 impl 类：
+<br>llamacpp是先建立context存放上下文和需要开辟的空间的信息，然后再分配、赋值存储空间的。<br>
+先逐步看一下 llama_model中的 impl类的内容（后文再解释内存/显存分配的模式）：
 ```cpp
 // impl 类
 struct llama_model::impl {
@@ -112,24 +113,26 @@ size_t size;
 
 struct ggml_object * next;
 
-enum ggml_object_type type;
+enum ggml_object_type type;  //三类：GGML_OBJECT_TYPE_TENSOR,GGML_OBJECT_TYPE_GRAPH,GGML_OBJECT_TYPE_WORK_BUFFER
 
 char padding[4];
 };
 ```
+顺着impl 类的成员 ggml_backend_buffer_ptr 会找到ggml_backend_buffer 结构体。
 ggml_backend_buffer 结构体:
 ```cpp
 struct ggml_backend_buffer {
-struct ggml_backend_buffer_i  iface;
+struct ggml_backend_buffer_i  iface;// 这个结构里存放的都是 interface 接口的函数指针
+// buft里面包含一个ggml_backend_buffer_type_i 的interface和 一个 ggml_backend_reg_t
 ggml_backend_buffer_type_t    buft;
 void * context;	 	// 这里注意多态，只有cpu backend和gpu backend的context不一样
 size_t size;
 enum ggml_backend_buffer_usage usage;
 };
 ```
+
 <br>
-<br>
-这里分解一下llamacpp中复杂的ggml backend 相互引用关系：<br>
+这些 ggml_backend 和  registry 相关的东西都有相互之间的引用。这里借用图来分解一下llamacpp中复杂的ggml backend 相互引用关系：<br>
 <img src="./llamacpp/ggml1.png" alt="引用图" width="750" height="327"><br>
 
 ```cpp 
@@ -147,11 +150,12 @@ void * (*get_proc_address)(ggml_backend_reg_t reg, const char * name);
 ```
 
 void ggml_backend_load_all_from_path(const char * dir_path)   中会调用：<br>
-ggml_backend_load_best("blas", silent, dir_path);<br>
-    ggml_backend_load_best("cann", silent, dir_path);<br>
+- ggml_backend_load_best("blas", silent, dir_path);<br>
+    - ggml_backend_load_best("cann", silent, dir_path);<br>
     ggml_backend_load_best("cuda", silent, dir_path);<br>
-        get_reg().load_backend(path, silent);	<br>
+        - get_reg().load_backend(path, silent);	<br>
 <br>
+
 get_reg() 获取的是 register ，其中调用：<br>
 ```cpp
 static ggml_backend_registry & get_reg() {
@@ -167,7 +171,7 @@ std::vector<ggml_backend_dev_t> devices;
 ```
 会创建这两个，这里device 在cpubackends的时候是一对一的，但是在用gpu时，devices不与backends一一对应，因为可能多个devices。（在用gpu时，应该是两个backends，多张卡就是多个devices）。<br>
 <br>
-simple.cpp 的 main中 的 ： llama_model * model = llama_model_load_from_file(model_path.c_str(), model_params); 这里的返回值 llama_model 是这样的：<br>
+llama_model_load_from_file(model_path.c_str(), model_params); 返回的 llama_model 是这样的：<br>
 ```cpp
 struct llama_model {
 llm_type type = LLM_TYPE_UNKNOWN;
@@ -181,7 +185,7 @@ llama_vocab   vocab;
 struct ggml_tensor * tok_embd   = nullptr;
 struct ggml_tensor * type_embd  = nullptr;
 // ...
-std::vector<llama_layer> layers;
+std::vector<llama_layer> layers;    // 各种llama_layer，包括MOE的layer，只是我们这里LLAMAINTELM构造用不到
 
 llama_model_params params;
 
@@ -201,15 +205,16 @@ std::unique_ptr<impl> pimpl;
 };
 
 ```
-前面的很多buffer 可以之后说，注意在private 中有需要私有的实现：<br>
-std::unique_ptr<impl> pimpl;    其中 impl中有 ggml_context_ptr  也就是 ggml_context（来自 ggml工程，是由object 和 tensor 连城的链表，也就是装 很多 buffer 的）， 还有  ggml_backend_buffer_ptr:<br>
+前面的很多buffer 可以之后说，注意在private 中有需要私有的实现，比如：<br>
+std::unique_ptr<impl> pimpl;    其中 impl中有上文提到的 ggml_context_ptr， 还有  ggml_backend_buffer_ptr，
+这里的buffer分cpu的buffer，和使用cuda时的buffer，我们先聚焦于cuda backend的buffer结构:<br>
 <img src="./llamacpp/ggml_2.png" alt="引用图" width="750" height="402"><br>
 ggml_init_from_file_impl里面 会便利然后ctx也就是context 里的总字节数存下来，
 ctx->size += GGML_PAD(ggml_nbytes(&ti.t), ctx->alignment);<br>
 <br>
 关于 ggml.c 中的  内存对齐这个问题后面再讨论：const size_t mem_size = params.mem_buffer ? params.mem_size : GGML_PAD(params.mem_size, GGML_MEM_ALIGN);<br>
 <br>
-ggml_init_from_file_impl 调用 llama_model_load，其中会创建 llama_model_loader 类：<br>
+ggml_init_from_file_impl 最后会调用 llama_model_load，其中会创建 llama_model_loader 类：<br>
 ```cpp
 try{
     llama_model_loader ml(fname, params.use_mmap, params.check_tensors, params.kv_overrides);
