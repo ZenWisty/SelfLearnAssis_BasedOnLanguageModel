@@ -26,8 +26,8 @@ llama.cpp  simple.cpp 中分为几大步：
 5. 转换 input 和 prompt 作为输入，并根据初始化的模型类对象调用llama_init_from_model 初始化 模型context 。
 6. 利用context 调用模型，并得到输出结果
 对上面的步骤择重点来解析：
-### llama_model_load_from_file函数
-会返回 一个 llama_model_params 的参数:
+### llama_model_default_params（）
+#### 所返回的 llama_model_params 的参数:
 ```cpp
 struct llama_model_params {
 ggml_backend_dev_t * devices; // list 存放设备，因为可能有多张卡，所以需要list
@@ -51,7 +51,7 @@ LLAMA_SPLIT_MODE_NONE  = 0, // 单 GPU
 LLAMA_SPLIT_MODE_LAYER = 1, // 将 layers 和 KV cache 在 GPU 之间 分布式部署
 LLAMA_SPLIT_MODE_ROW   = 2, // 将 layers 和 KV cache 在 GPU 之间 分布式部署，如果系统支持tensor split，就采用
 ```
-### llama_model_load_from_file
+#### llama_model_load_from_file 函数中新建的 llama_model以及 llama_model中的impl类的内容
 llama_model_load_from_file 比较重要，其中会新建一个 llama_model 类，参数都是初始化的，tensor赋值和参数赋值会留到之后；但是llama_model 依然包含一些重要的内容： llama_model 中包含了一个 impl 类：
 <br>llamacpp是先建立context存放上下文和需要开辟的空间的信息，然后再分配、赋值存储空间的。<br>
 先逐步看一下 llama_model中的 impl类的内容（后文再解释内存/显存分配的模式）：
@@ -90,6 +90,8 @@ layer_dev dev_output = {};
 std::vector<layer_dev> dev_layer;
 };
 ```
+
+#### impl类中的ggml_context_ptr 
 ggml_context_ptr 结构体:
 ```cpp
 // 本质上是一个链表新，begin 和 end都是 ggml_object
@@ -118,6 +120,7 @@ enum ggml_object_type type;  //三类：GGML_OBJECT_TYPE_TENSOR,GGML_OBJECT_TYPE
 char padding[4];
 };
 ```
+#### impl类中的ggml_backend_buffer_ptr相关内容
 顺着impl 类的成员 ggml_backend_buffer_ptr 会找到ggml_backend_buffer 结构体。
 ggml_backend_buffer 结构体:
 ```cpp
@@ -169,52 +172,21 @@ struct ggml_backend_registry {
 std::vector<ggml_backend_reg_entry> backends;
 std::vector<ggml_backend_dev_t> devices;
 ```
-会创建这两个，这里device 在cpubackends的时候是一对一的，但是在用gpu时，devices不与backends一一对应，因为可能多个devices。（在用gpu时，应该是两个backends，多张卡就是多个devices）。<br>
+会创建这两个，这里device 在cpubackends的时候是一对一的，但是在用gpu时，devices不与backends一一对应，因为可能多个devices。（在用gpu时，应该是两个backends分别代表 cpu资源和gpu卡，多张卡就是多个devices）。<br>
 <br>
-llama_model_load_from_file(model_path.c_str(), model_params); 返回的 llama_model 是这样的：<br>
-```cpp
-struct llama_model {
-llm_type type = LLM_TYPE_UNKNOWN;
-llm_arch arch = LLM_ARCH_UNKNOWN;
-
-std::string name = "n/a";
-
-llama_hparams hparams = {};
-llama_vocab   vocab;
-
-struct ggml_tensor * tok_embd   = nullptr;
-struct ggml_tensor * type_embd  = nullptr;
-// ...
-std::vector<llama_layer> layers;    // 各种llama_layer，包括MOE的layer，只是我们这里LLAMAINTELM构造用不到
-
-llama_model_params params;
-
-// gguf metadata
-std::unordered_map<std::string, std::string> gguf_kv;
-
-// list of devices used in this model
-std::vector<ggml_backend_dev_t> devices;
-
-// for quantize-stats only
-std::vector<std::pair<std::string, struct ggml_tensor *>> tensors_by_name;
-
-// ...
-private:
-struct impl;
-std::unique_ptr<impl> pimpl;
-};
-
-```
 前面的很多buffer 可以之后说，注意在private 中有需要私有的实现，比如：<br>
 std::unique_ptr<impl> pimpl;    其中 impl中有上文提到的 ggml_context_ptr， 还有  ggml_backend_buffer_ptr，
-这里的buffer分cpu的buffer，和使用cuda时的buffer，我们先聚焦于cuda backend的buffer结构:<br>
+这里的buffer分cpu的buffer，和使用cuda时的buffer. 我们先聚焦于cuda backend的buffer结构:<br>
 <img src="./llamacpp/ggml_2.png" alt="引用图" width="750" height="402"><br>
-ggml_init_from_file_impl里面 会便利然后ctx也就是context 里的总字节数存下来，
+值得注意的是，最后llama_model param里计算出的总字节数大小，是遍历ctx也就是context 里的总字节数存下来，
 ctx->size += GGML_PAD(ggml_nbytes(&ti.t), ctx->alignment);<br>
 <br>
 关于 ggml.c 中的  内存对齐这个问题后面再讨论：const size_t mem_size = params.mem_buffer ? params.mem_size : GGML_PAD(params.mem_size, GGML_MEM_ALIGN);<br>
 <br>
-ggml_init_from_file_impl 最后会调用 llama_model_load，其中会创建 llama_model_loader 类：<br>
+
+
+### llama_model_load_from_file()
+llama_model_load_from_file会调用 llama_model_load，其中会创建 llama_model_loader 类：const int status = llama_model_load(path_model, splits, *model, params);<br>
 ```cpp
 try{
     llama_model_loader ml(fname, params.use_mmap, params.check_tensors, params.kv_overrides);
@@ -250,8 +222,10 @@ try{
         }
         // ...
 ```
-首先说调用完成之后ml中会有哪些成员:(mappings 当下刚初始化，还什么都没用，所以size是0，weights_map 是键值对，里面是每个层 的名字，contexts 是链表对应后面会有的obj+tensors头的图，meta是存gguf的context)<br>
+首先说调用完成之后ml中会有哪些成员:(mappings 当下刚初始化，还什么都没用，所以size是0，weights_map 是键值对，里面是每个层 的名字，contexts 是链表ggml_obj+tensors头的图，meta是存gguf的context)<br>
 <img src="./llamacpp/ggml_3.png" alt="引用图" width="434" height="391"><br>
+
+#### llama_model_loader 类
 源码：llama_model_loader 和 他的构造函数
 
 ```cpp
@@ -368,13 +342,9 @@ struct gguf_context * gguf_init_from_file_impl(FILE * file, struct gguf_init_par
             ctx->size += GGML_PAD(ggml_nbytes(&ti.t), ctx->alignment);
         }
     }
-    // load the tensor data only if requested
+    // 只有有需要时，才load tensor data
     if (params.ctx != nullptr) {
-        // if the provided gguf_context is no_alloc, then we create "empty" tensors and do not read the binary blob
-        // otherwise, we load the binary blob into the created ggml_context as well, and point the "data" members of
-        //   the ggml_tensor structs to the appropriate locations in the binary blob
-
-        // compute the exact size needed for the new ggml_context
+        // gguf_context 里面指明了是 no_alloc 时,只创建 "empty" tensors 不 read binary blob。否则 load 进 binary blob 到 ggml_context 之后 将  ggml_tensor 结构体与 binary blob 中的相应位置联系起来指明
         const size_t mem_size =
             params.no_alloc ?
             (n_tensors    )*ggml_tensor_overhead() :
@@ -445,4 +415,60 @@ struct ggml_tensor t; // for holding the equivalent info
 uint64_t offset;      // offset from start of `data`, must be a multiple of `ALIGNMENT`
 };
 ```
-// 其中， ggml_tensor 就是下面的章节中讲的那个ggml_tensor ggml相关内容摘要（llamacpp 搭建在 ggml 工程之上）<br>
+#### gpubackend 和 cpu 模式下的tensor 内存分配情况
+这里还是要分清一下cpu backend 和 gpu backend 情况下的 内存/显存分配方式的不同:<br>
+cpu only：比gpu模式，多放一个头+data<br>
+<img src="./llamacpp/ggml_4.png" alt="引用图" width="992" height="70"><br>
+gpubackend：<br>
+<img src="./llamacpp/ggml_5.png" alt="引用图" width="365" height="82"><br>
+读完219 个tensor放在context里面的时候（链表）：<br>
+<img src="./llamacpp/ggml_6.png" alt="引用图" width="992" height="70"><br>
+
+#### load_hparams 函数
+llama_model_loader 创建完成之后会调用 load_hparams 函数，这个函数会将ml中的kv对 读到 hparams 中<br>
+
+#### load_tensors 函数
+load_hparams 之后会调用 load_tensors 函数。十分重要，单独分析:<br>
+llama_model_load 中的 load_tensors 函数 ， 用来将ml 中的 context 中的内容读到 llama_model 和 gpu中<br>
+有关cpu gpu 的 buf list,我看过一些博文，cpu部分的buflist 确实会创建3个，第一个是cpu的dev，第二个是gpu的dev，第三个又是cpu的dev，不清楚这样的设计是为了规避什么，但是这里执行时在有gpu的情况下，会不用第一个cpu的dev的buflist。:<br>
+<img src="./llamacpp/ggml_7.png" alt="引用图" width="980" height="410"><br>
+源码：<br>
+```cpp
+// 这里注意，我把 llama_model 的成员 impl 的结构放出来， 这里有个cpu_buft_list， 还有
+// 一个map类型的 gpu_buft_list
+struct llama_model::impl {
+    impl() {}
+    ~impl() {}
+    // ...
+    buft_list_t cpu_buft_list;
+    // 这是因为 cpu只有一个，但是gpu可能有多个，因此需要用map记录分配
+    std::map<ggml_backend_dev_t, buft_list_t> gpu_buft_list; 
+    // 从这里也能看出，layer_dev 中，因为可能layer是放在不同device gpu上的，
+    // 因此这里也带了一个 ggml_backend_dev_t 用于记录需要放到的device
+    struct layer_dev {
+        ggml_backend_dev_t dev;
+        buft_list_t * buft_list;
+    };
+    // ...
+}
+
+bool llama_model::load_tensors(llama_model_loader & ml) {
+    const auto & split_mode   = params.split_mode;
+    const auto & n_gpu_layers = params.n_gpu_layers;
+    const auto & use_mlock    = params.use_mlock;
+    const auto & tensor_split = params.tensor_split;
+
+    const int n_layer = hparams.n_layer;	// 共有24个layer
+
+    const bool use_mmap_buffer = true;      // 是否使用内存映射
+    
+    // build a list of buffer types for the CPU and GPU devices
+    pimpl->cpu_buft_list = make_cpu_buft_list(devices);
+    for (auto * dev : devices) {
+        buft_list_t buft_list = make_gpu_buft_list(dev, split_mode, tensor_split);
+        // add CPU buffer types as a fallback
+        buft_list.insert(buft_list.end(), pimpl->cpu_buft_list.begin(), pimpl->cpu_buft_list.end());
+        pimpl->gpu_buft_list.emplace(dev, std::move(buft_list));
+    }
+```
+
