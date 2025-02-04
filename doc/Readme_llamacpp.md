@@ -18,6 +18,7 @@ int main(int argc, char ** argv) {
 ```
 然后切到根目录用Cmake build即可。<br>
 ## 源码解读
+
 llama.cpp  simple.cpp 中分为几大步：
 1. ggml_backend_load_all（） dll读入所有需要使用的 ggml backend的函数；
 2. llama_model_default_params（）返回一个刚初始化的 llama_model_params 类型 参数。其中包含一些超参，比如放到gpu上的layer的总数：n_gpu_layers，在llama模型中，所有219个layer中有99个被放到 gpu中。
@@ -25,9 +26,12 @@ llama.cpp  simple.cpp 中分为几大步：
 4. llama_model_get_vocab 初始化 vocab 表，相当于python代码中的 tokenizer 的部分功能
 5. 转换 input 和 prompt 作为输入，并根据初始化的模型类对象调用llama_init_from_model 初始化 模型context 。
 6. 利用context 调用模型，并得到输出结果
-对上面的步骤择重点来解析：
+
+对上面的步骤择重点来解析：<br>
+
 ### llama_model_default_params（）
 #### 所返回的 llama_model_params 的参数:
+NOTE:llamacpp 中"初始化 context 和 依赖 context 来读取gguf，构建llama_model 的过程"这一部分的结构比较复杂，这里平铺出来可能显得内容多且乱，最好的方法是直接调试，逐步分解，不过在这里还是把个人认为的重点列举出来，供参考，可跳过。<br>
 ```cpp
 struct llama_model_params {
 ggml_backend_dev_t * devices; // list 存放设备，因为可能有多张卡，所以需要list
@@ -121,7 +125,7 @@ char padding[4];
 };
 ```
 #### impl类中的ggml_backend_buffer_ptr相关内容
-顺着impl 类的成员 ggml_backend_buffer_ptr 会找到ggml_backend_buffer 结构体。
+顺着impl 类的成员 ggml_backend_buffer_ptr 会找到ggml_backend_buffer 结构体。<br>
 ggml_backend_buffer 结构体:
 ```cpp
 struct ggml_backend_buffer {
@@ -141,13 +145,10 @@ enum ggml_backend_buffer_usage usage;
 ```cpp 
 struct ggml_backend_reg_i {
 const char * (*get_name)(ggml_backend_reg_t reg);
-
-// enumerate available devices
+//调用函数，获得 device数目和具体device信息
 size_t             (*get_device_count)(ggml_backend_reg_t reg);
 ggml_backend_dev_t (*get_device)(ggml_backend_reg_t reg, size_t index);
-
-// (optional) get a pointer to a function in the backend
-// backends can add custom functions that are not part of the standard ggml-backend interface
+// 维护一个来自backend函数指针
 void * (*get_proc_address)(ggml_backend_reg_t reg, const char * name);
 };
 ```
@@ -276,11 +277,11 @@ struct gguf_context * gguf_init_from_file_impl(FILE * file, struct gguf_init_par
         // ....
     }
     // ...
-    if (ok && gr.read(n_tensors)) {	// 从 gguf 读 n_tensors，视频例子中是219个
+    if (ok && gr.read(n_tensors)) {	// 从 gguf 读 n_tensors，例子中是219个
         // ...
     }
     // ...
-    if (ok && gr.read(n_kv)) {  // 从 gguf 读 n_kv 键值对，视频例子中是26个
+    if (ok && gr.read(n_kv)) {  // 从 gguf 读 n_kv 键值对，例子中是26个
         // ...
     }
 
@@ -350,7 +351,7 @@ struct gguf_context * gguf_init_from_file_impl(FILE * file, struct gguf_init_par
             (n_tensors    )*ggml_tensor_overhead() :
             (n_tensors + 1)*ggml_tensor_overhead() + ctx->size;
         // 这里对应两种方式，第一种是backend只存多个object+tensor头
-        //（图见下面章节“gpubackend 和 cpu 模式下的tensor 内存分配情况”https://www.yuque.com/huangyuxiang-8hx5j/wb31rp/lv9gnrqmoz2yyp07#bJo3x）
+        //（图见下面章节“gpubackend 和 cpu 模式下的tensor 内存分配情况”）
         // 第二种是cpu形式，存一个object+tensor头和weight data，以及多个 object+tensor头
         // （图见下面章节“gpubackend 和 cpu 模式下的tensor 内存分配情况”https://www.yuque.com/huangyuxiang-8hx5j/wb31rp/lv9gnrqmoz2yyp07#bJo3x）
 
@@ -399,7 +400,7 @@ std::string key;
 
 bool is_array;
 enum gguf_type type;	// 这个定义了下面这个 data 是以什么形式解读的
-// 比如视频例子中 是GGUF_TYPE_INT32（4） 
+// 比如例子中 是GGUF_TYPE_INT32（4） 
 // 意思是 data中虽然存了4个 int8类型，但是要按 int32来解析
 std::vector<int8_t>      data;
 std::vector<std::string> data_string;
@@ -424,8 +425,8 @@ gpubackend：<br>
 读完219 个tensor放在context里面的时候（链表）：<br>
 <img src="./llamacpp/ggml_6.png" alt="引用图" width="992" height="70"><br>
 
-#### load_hparams 函数
-llama_model_loader 创建完成之后会调用 load_hparams 函数，这个函数会将ml中的kv对 读到 hparams 中<br>
+#### load_hparams & load_vocab 函数
+llama_model_loader 创建完成之后会调用 load_hparams，这个函数会将ml中的kv对 读到 hparams 中,之后是 load_vocab 函数<br>
 
 #### load_tensors 函数
 load_hparams 之后会调用 load_tensors 函数。十分重要，单独分析:<br>
@@ -433,6 +434,8 @@ llama_model_load 中的 load_tensors 函数 ， 用来将ml 中的 context 中�
 有关cpu gpu 的 buf list,我看过一些博文，cpu部分的buflist 确实会创建3个，第一个是cpu的dev，第二个是gpu的dev，第三个又是cpu的dev，不清楚这样的设计是为了规避什么，但是这里执行时在有gpu的情况下，会不用第一个cpu的dev的buflist。:<br>
 <img src="./llamacpp/ggml_7.png" alt="引用图" width="980" height="410"><br>
 源码：<br>
+load_tensors 函数：<br>
+
 ```cpp
 // 这里注意，我把 llama_model 的成员 impl 的结构放出来， 这里有个cpu_buft_list， 还有
 // 一个map类型的 gpu_buft_list
@@ -458,7 +461,7 @@ bool llama_model::load_tensors(llama_model_loader & ml) {
     const auto & use_mlock    = params.use_mlock;
     const auto & tensor_split = params.tensor_split;
 
-    const int n_layer = hparams.n_layer;	// 共有24个layer
+    const int n_layer = hparams.n_layer;	//用于ROPE 旋转位置编码
 
     const bool use_mmap_buffer = true;      // 是否使用内存映射
     
@@ -466,9 +469,175 @@ bool llama_model::load_tensors(llama_model_loader & ml) {
     pimpl->cpu_buft_list = make_cpu_buft_list(devices);
     for (auto * dev : devices) {
         buft_list_t buft_list = make_gpu_buft_list(dev, split_mode, tensor_split);
-        // add CPU buffer types as a fallback
+        // 将cpu_buft_list 作为备用先加入进来，然后在加入当下的gpu buf_list
+        // 注意这里，每一个gpu devices都有一个buf list 加入
         buft_list.insert(buft_list.end(), pimpl->cpu_buft_list.begin(), pimpl->cpu_buft_list.end());
         pimpl->gpu_buft_list.emplace(dev, std::move(buft_list));
     }
-```
 
+    // ...
+    // 得到每个device 的显存量
+    bool all_zero = tensor_split == nullptr || std::all_of(tensor_split, tensor_split + n_devices(), [](float x) { return x == 0.0f; });
+    std::vector<float> splits(n_devices());
+    if (all_zero) {
+        // default split, by free memory
+        for (size_t i = 0; i < n_devices(); ++i) {
+            ggml_backend_dev_t dev = devices[i];
+            size_t total;
+            size_t free;
+            ggml_backend_dev_memory(dev, &free, &total);
+            splits[i] = free;
+        }
+    } else {
+        std::copy(tensor_split, tensor_split + n_devices(), splits.begin());
+    }
+    // 计算每个devices 分配的split 比例
+    float split_sum = 0.0f;
+    for (size_t i = 0; i < n_devices(); ++i) {
+        split_sum += splits[i];
+        splits[i] = split_sum;
+    }
+    for (size_t i = 0; i < n_devices(); ++i) {
+        splits[i] /= split_sum;
+    }
+    // ... 
+    ggml_backend_dev_t cpu_dev = ggml_backend_dev_by_type(GGML_BACKEND_DEVICE_TYPE_CPU);
+    const int i_gpu_start = std::max((int) hparams.n_layer - n_gpu_layers, (int) 0);
+    const int act_gpu_layers = devices.empty() ? 0 : std::min(n_gpu_layers, (int)n_layer + 1);
+    auto get_layer_buft_list = [&](int il) -> llama_model::impl::layer_dev {
+        // i_gpu_start 是刚计算出来的gpu部署layer的起点，如果早于这个起点
+        // 则会被放到 cpu buf list 中
+        if (il < i_gpu_start || (il - i_gpu_start) >= act_gpu_layers) {
+            return {cpu_dev, &pimpl->cpu_buft_list};
+        }
+        const int layer_gpu = std::upper_bound(splits.begin(), splits.begin() + n_devices(), float(il - i_gpu_start)/act_gpu_layers) - splits.begin();
+        auto * dev = devices.at(layer_gpu);
+        return {dev, &pimpl->gpu_buft_list.at(dev)};
+    };
+
+    // 将初始的input放到 cpu上，这样有一定的好处，可以使得效率更高，没必要input也传到gpu上
+    pimpl->dev_input = { cpu_dev, &pimpl->cpu_buft_list };
+    // 其余的用于ROPE 旋转位置编码的layer 和 output layer 都放到 gpu上，用的是lambda函数 get_layer_buft_list
+    // ...
+    // 然后先定义 buffer 的 context，用下面这个lambda 函数定义
+    std::map<ggml_backend_buffer_type_t, ggml_context *> ctx_map;
+    auto ctx_for_buft = [&](ggml_backend_buffer_type_t buft) -> ggml_context * {
+        auto it = ctx_map.find(buft);
+        if (it == ctx_map.end()) {
+            ggml_init_params params = {
+                /*.mem_size   =*/ ctx_size,
+                /*.mem_buffer =*/ NULL,
+                /*.no_alloc   =*/ true,
+            };
+
+            ggml_context * ctx = ggml_init(params);
+            if (!ctx) {
+                throw std::runtime_error(format("failed to create ggml context"));
+            }
+
+            ctx_map[buft] = ctx;
+            pimpl->ctxs.emplace_back(ctx);
+
+            return ctx;
+        }
+        return it->second;
+    };
+
+    //  ... 
+    // 初始化 tensor , 这个函数比较重要, 因为如果需要定制自己的模型用于llamacpp，只需要
+    // 定制特殊的层就行，然后加入到create_tensor 能初始化的层类型中
+    auto create_tensor = [&](const LLM_TN_IMPL & tn, const std::initializer_list<int64_t> & ne, int flags) -> ggml_tensor * {
+            ggml_tensor * t_meta = ml.get_tensor_meta(tn.str().c_str());
+        // ...
+
+        // select_weight_buft 调用weight_buft_supported 逐个验证、选取buft_list 中的buf来用
+        ggml_backend_buffer_type_t buft = select_weight_buft(hparams, t_meta, op, *buft_list);
+        // 这里避免使用的buf是host device中的buf（原因？？？）
+        auto * buft_dev = ggml_backend_buft_get_device(buft);
+        if (ml.use_mmap && buft_dev && buft == ggml_backend_dev_host_buffer_type(buft_dev)) {
+            auto * cpu_dev = ggml_backend_dev_by_type(GGML_BACKEND_DEVICE_TYPE_CPU);
+            buft = ggml_backend_dev_buffer_type(cpu_dev);
+        }
+        // ...
+        // if duplicated, check if the original tensor was allocated in the same
+        // buffer type context and avoid creating a new one
+            if (flags & TENSOR_DUPLICATED) {
+                ggml_tensor * t = ggml_get_tensor(ctx, tn.str().c_str());
+                if (t) {
+                    return t;
+                }
+            }
+        // ！！！关键函数，根据传入参数tn，和维度信息ne，构建tensor放在 ctx中
+        // 其中调用了ml的成员函数 check_tensor_dims 和 ggml_dup_tensor 函数
+        return ml.create_tensor(ctx, tn, ne, flags);
+        
+    // 然后是完整的读入层的代码
+    // ...
+    case LLM_ARCH_INTERNLM2:
+                {
+                    tok_embd = create_tensor(tn(LLM_TENSOR_TOKEN_EMBD, "weight"), {n_embd, n_vocab}, 0);
+
+                    // output
+                    output_norm = create_tensor(tn(LLM_TENSOR_OUTPUT_NORM, "weight"), {n_embd}, 0);
+                    output      = create_tensor(tn(LLM_TENSOR_OUTPUT,      "weight"), {n_embd, n_vocab}, 0);
+                    // 循环读入
+                    for (int i = 0; i < n_layer; ++i) {
+                        auto & layer = layers[i];
+
+                        layer.attn_norm = create_tensor(tn(LLM_TENSOR_ATTN_NORM, "weight", i), {n_embd}, 0);
+                        // layer.wqkv = create_tensor(tn(LLM_TENSOR_ATTN_QKV, "weight", i), {n_embd, n_embd + 2*n_embd_gqa}, 0);
+                        layer.wq = create_tensor(tn(LLM_TENSOR_ATTN_Q,   "weight", i), {n_embd, n_embd}, 0);
+                        layer.wk = create_tensor(tn(LLM_TENSOR_ATTN_K,   "weight", i), {n_embd, n_embd_gqa}, 0);
+                        layer.wv = create_tensor(tn(LLM_TENSOR_ATTN_V,   "weight", i), {n_embd, n_embd_gqa}, 0);
+
+                        layer.wo = create_tensor(tn(LLM_TENSOR_ATTN_OUT, "weight", i), {n_embd, n_embd}, 0);
+                        layer.ffn_norm = create_tensor(tn(LLM_TENSOR_FFN_NORM, "weight", i), {n_embd}, 0);
+                        layer.ffn_gate = create_tensor(tn(LLM_TENSOR_FFN_GATE, "weight", i), {n_embd,   n_ff}, 0);
+                        layer.ffn_down = create_tensor(tn(LLM_TENSOR_FFN_DOWN, "weight", i), {  n_ff, n_embd}, 0);
+                        layer.ffn_up   = create_tensor(tn(LLM_TENSOR_FFN_UP,   "weight", i), {n_embd,   n_ff}, 0);
+                    }
+                } break;
+```
+load_tensors()中的 make_cpu_buft_list,没有ACCEL 处理器，因此只会添加一个cpu：<br>
+```cpp
+static buft_list_t make_cpu_buft_list(const std::vector<ggml_backend_dev_t> & devices) {
+    buft_list_t buft_list;
+    // ... ACCEL 处理器部分，跳过
+    // 拿到的 cpu_dev 和 cpu_reg 对应就是之前提到过的 <ggml_backend_dev_t> 和 <ggml_backend_reg_entry>类型
+    auto * cpu_dev = ggml_backend_dev_by_type(GGML_BACKEND_DEVICE_TYPE_CPU);
+    auto * cpu_reg = ggml_backend_dev_backend_reg(cpu_dev);
+    // ...
+    // 添加一个主机缓冲区类型，用于在主机缓冲区中存储张量，这在将大量批次的处理任务卸载到GPU设备时非常有用，因为它减少了通常用于数据传输的时间。通常使用设备列表中的第一个设备来完成。一个更好的方法是按权重处理，使用设备的offload_op函数来确定它是否从存储在主机缓冲区中受益。
+    for (auto * dev : devices) {
+        ggml_backend_buffer_type_t buft = ggml_backend_dev_host_buffer_type(dev);
+        if (buft) {
+            buft_list.emplace_back(dev, buft);
+            break;
+        }
+    }
+```
+gpu的buflist 生成里面调用了 ggml_backend_cuda_buffer_type,  效果同ggml_backend_dev_backend_reg<br>
+```cpp
+ggml_backend_buffer_type_t ggml_backend_cuda_buffer_type(int device) {
+    //... 
+    if (!ggml_backend_cuda_buffer_type_initialized) {
+        for (int i = 0; i < ggml_backend_cuda_get_device_count(); i++) {
+            ggml_backend_cuda_buffer_types[i] = {
+                /* .iface    = */ ggml_backend_cuda_buffer_type_interface,
+                /* .device   = */ ggml_backend_reg_dev_get(ggml_backend_cuda_reg(), i),
+                /* .context  = */ new ggml_backend_cuda_buffer_type_context{i, GGML_CUDA_NAME + std::to_string(i)},
+                };
+        }
+        ggml_backend_cuda_buffer_type_initialized = true;
+    }
+
+    return &ggml_backend_cuda_buffer_types[device];
+    // ...
+```
+ggml_backend_cuda_device_get_memory  最底层是根据ctx  的信息调用 cudaMemInfo 设备接口获得的<br>
+
+
+
+<br><br><br>
+
+## cuda 版本 部分算子
