@@ -635,6 +635,119 @@ ggml_backend_buffer_type_t ggml_backend_cuda_buffer_type(int device) {
     // ...
 ```
 ggml_backend_cuda_device_get_memory  最底层是根据ctx  的信息调用 cudaMemInfo 设备接口获得的<br>
+最后创建tensor之前有一个繁琐的验证过程 select_weight_buft，这里只简单介绍，他的结果是通过构建ggml_object 返回合理的buf。<br>
+
+#### ml.create_tensors步骤
+load_tensor  中 create_tensor 最后调用的 ml.create_tensors 函数中有使用的check_tensor_dims 作用是检查所需生成的tensor的维度信息, 其中底层调的是未分配buffer的ctx 的 get_weight 函数，然后检查这些函数的维度是否合格。检查完维度后就是最关键的根据传入信息创建tensors 即调用ggml_dup_tensor，然后记录下ggml_nbytes总共要占用多少空间。<br>
+应当说明，在load_tensor 执行完成之后还是没有构建出计算图也没有分配buffer空间，中间构建的图，都释放了，只是用来验证这个操作在device上分配buffer是否能够支持。<br>
+当load_tensor 都执行完的时候，llama_model 里面的各个layer的属性就都从文件信息中拿到了<br>
+ggml_new_tensor_impl(调用完这个之后也只是将存放在 host机器里面的ggml_tensor信息全部初始化完了，并返回给 select_weight_buft)：<br>
+```cpp
+static struct ggml_tensor * ggml_new_tensor_impl(
+struct ggml_context * ctx,
+enum   ggml_type      type,
+int                   n_dims,
+const int64_t       * ne,
+struct ggml_tensor  * view_src,
+size_t                view_offs) {
+    
+    GGML_ASSERT(type >= 0 && type < GGML_TYPE_COUNT);
+    GGML_ASSERT(n_dims >= 1 && n_dims <= GGML_MAX_DIMS);
+    // ...
+    // 因为根据数据类型的不同，可能一行存储的数据个数是不同的（如INT8的数据4个才能占用INT32的空间）
+    // 所以需要重新计算一行有多少个元素，但是只需要对ne的第一个维度计算
+    size_t data_size = ggml_row_size(type, ne[0]);  
+    // 然后算整个tensor的大小
+    for (int i = 1; i < n_dims; i++) {
+        data_size *= ne[i];
+    }
+
+    size_t obj_alloc_size = 0;
+    // 当context设置了 no_alloc 的时候是不会在cpu context's memory pool中申请buf的
+    if (view_src == NULL && !ctx->no_alloc) {
+        obj_alloc_size = data_size;
+    }
+
+    struct ggml_object * const obj_new = ggml_new_object(ctx, GGML_OBJECT_TYPE_TENSOR, GGML_TENSOR_SIZE + obj_alloc_size);
+    GGML_ASSERT(obj_new);
+    // 直接重定向为 ggml_tensor *，内存地址就是 在ctx的内存mem_buffer 上 加上obj_new->offs偏移量 
+    
+    struct ggml_tensor * const result = (struct ggml_tensor *)((char *)ctx->mem_buffer + obj_new->offs);
+
+    // 初始化 需要返回的 ggml_tensor 然后进行
+    *result = (struct ggml_tensor) {
+        /*.type         =*/ type,
+        /*.buffer       =*/ NULL,
+        /*.ne           =*/ { 1, 1, 1, 1 },
+        /*.nb           =*/ { 0, 0, 0, 0 },
+        /*.op           =*/ GGML_OP_NONE,	// 这里暂时默认没有操作
+        /*.op_params    =*/ { 0 },
+        /*.flags        =*/ 0,
+        /*.src          =*/ { NULL },
+        /*.view_src     =*/ view_src,
+        /*.view_offs    =*/ view_offs,
+        /*.data         =*/ obj_alloc_size > 0 ? (void *)(result + 1) : data,
+        /*.name         =*/ { 0 },
+        /*.extra        =*/ NULL,
+        /*.padding      =*/ { 0 },
+        };
+
+    for (int i = 0; i < n_dims; i++) {
+        result->ne[i] = ne[i];
+    }
+    // 由于nb 是算bytes数的，所以需要换算一下
+    result->nb[0] = ggml_type_size(type);
+    result->nb[1] = result->nb[0]*(result->ne[0]/ggml_blck_size(type));
+    for (int i = 2; i < GGML_MAX_DIMS; i++) {
+        result->nb[i] = result->nb[i - 1]*result->ne[i - 1];
+    }
+    
+    ctx->n_objects++;
+    return result;
+}
+```
+ggml_new_tensor_impl 中的ggml_new_object 函数是直接先创建一个object:<br>
+```cpp
+static struct ggml_object * ggml_new_object(struct ggml_context * ctx, enum ggml_object_type type, size_t size) {
+    struct ggml_object * obj_cur = ctx->objects_end;
+    // 从 当前obj中拿取 cur_offs， cur_size， 并计算当前tensor应该的结尾位置 ...
+    // align to GGML_MEM_ALIGN ...
+
+    char * const mem_buffer = ctx->mem_buffer;
+    // 由于tensor都是连续存储的，并且已经根据context指定 device 和device中的 mem_buffer，所以直接赋值
+    struct ggml_object * const obj_new = (struct ggml_object *)(mem_buffer + cur_end);
+    // ...
+
+    *obj_new = (struct ggml_object) {
+        // 这里注意！！！：cur_end 目前就是上一个obj的结束位置，
+        // 在连续存储中，每一个tensor在申请的时候都是一个obj+tenosr描述子的，
+        // 而GGML_OBJECT_SIZE是obj的大小，通常32bytes，所以tensor描述子的位置在+32的位置
+        .offs = cur_end + GGML_OBJECT_SIZE,
+        .size = size_needed,
+        .next = NULL,
+        .type = type,
+        };
+
+    GGML_ASSERT_ALIGNED(mem_buffer + obj_new->offs);
+    // 维护context链表
+    if (obj_cur != NULL) {
+        obj_cur->next = obj_new;
+    } else {
+        ctx->objects_begin = obj_new;
+    }
+    ctx->objects_end = obj_new;
+    return obj_new;
+}
+```
+#### ml.create_tensors都执行完之后的 load_tensor 后半部分
+```cpp
+    // ... 
+    ml.done_getting_tensors();
+
+    ml.init_mappings(true, use_mlock ? &pimpl->mlock_mmaps : nullptr);
+    pimpl->mappings.reserve(ml.mappings.size());
+    //...
+```
 
 
 
