@@ -1,4 +1,4 @@
-# llama.cpp 简单实践&源码解析
+# llama.cpp 简单实践&框架源码解析
 llama.cpp 是一个简洁、强大的大语言模型（不止llama，支持多种）部署框架，它基于ggml工程搭建，包含了量化、分布式部署等技术栈。llama.cpp 项目在github上十分活跃，更新速度很快。因此这里采用的学习路径是借用一个直观的例子脚本，即llama.cpp/examples/simple.cpp 来解读源码和说明。这个例子包含了llamacpp部署推理时大部分的主要功能。
 
 ## 环境配置
@@ -750,7 +750,3 @@ static struct ggml_object * ggml_new_object(struct ggml_context * ctx, enum ggml
 ```
 
 
-
-<br><br><br>
-
-## cuda 版本 部分算子
