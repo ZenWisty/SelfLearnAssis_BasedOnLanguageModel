@@ -49,11 +49,14 @@ NOTE：1)11月开始学习开发RAG等相关功能，12月底时才发现豆包A
 #### Agent托管和Agent服务
 
 ### Agents本地部署的相关路径和准备
-除了围绕Agents的实现之外，这个学习工程的实践过程中，遵循尽量将大模型 backend 部署在自己本地的方式。因此agent各个模块的选择偏好量化过的或者轻量的。这里我主要聚焦于方便部署的两个技术，即llama.cpp 和 最近流行的微型分布式部署框架exo。<br><br>
-llama.cpp 是一个简洁、强大的大语言模型（不止llama，支持多种）部署框架，它基于ggml工程搭建，包含了量化、分布式部署等技术栈<br>
+除了围绕Agents的实现之外，这个学习工程的实践过程中，遵循尽量将大模型 backend 部署在自己本地的方式。因此agent各个模块的选择偏好量化过的或者轻量的。这里我主要聚焦于方便部署的两个技术，即llama.cpp 和 最近流行的微型分布式部署框架vllm 以及 exo。<br><br>
+适合本地部署：llama.cpp 是一个简洁、强大的大语言模型（不止llama，支持多种）部署框架，它基于ggml工程搭建，包含了量化、分布式部署等技术栈<br>
 关于llama.cpp框架的详细解读见：[./doc/Readme_llamacpp.md](./doc/Readme_llamacpp.md)；<br>
 关于llama.cppcuda 源码和算子的详细解读见：[./doc/Readme_llamacpp_cuda_kernel.md](./doc/Readme_llamacpp_cuda_kernel.md)；<br>
-<br>关于exo的实践过程和工程解读见：<br>
+<br>
+适合云端部署：vLLM 相关调研文档：<br>
+<br>
+适合内网异构族群部署：关于exo的实践过程和工程解读见：<br>
 
 ### 这个项目所基于的Agent框架的环境配置 & requirements
 需要安装 metagpt ，安装方法见 https://docs.deepwisdom.ai/main/zh/guide/get_started/installation.html<br>
