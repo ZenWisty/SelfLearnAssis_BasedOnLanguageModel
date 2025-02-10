@@ -32,7 +32,7 @@ HtT框架结构：
 
 ## PPO & GRPO
 ### PPO 解析
-<img src="./DLReasoningDeepSeekR1/PPO.png">
+<img src="./DLReasoningDeepSeekR1/PPO.PNG">
 首先在上图的 Pair good/bad answers 和 Pretrained Model 以及 RW 步骤中训练 reward model r(s,a)，优化正负样本之间的距离：<br>
 <img src="./DLReasoningDeepSeekR1/Latex_1.PNG">
 
