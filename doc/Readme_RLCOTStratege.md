@@ -34,10 +34,7 @@ HtT框架结构：
 ### PPO 解析
 <img src="./DLReasoningDeepSeekR1/PPO.png">
 首先在上图的 Pair good/bad answers 和 Pretrained Model 以及 RW 步骤中训练 reward model r(s,a)，优化正负样本之间的距离：<br>
-L R​ (r ϕ,D)=−E( x,y ,y )∼D[logσ(r ​ (x,y w​ )−r ϕ​ (x,y l​ ))]
-$$
-\mathcal{L}_R(r_\phi, \mathcal{D}) = -\mathbb{E}_{(x, y_w, y_l) \sim \mathcal{D}} \left[ \log \sigma \left( r_\phi(x, y_w) - r_\phi(x, y_l) \right) \right]
-$$
+<img src="./DLReasoningDeepSeekR1/Latex_1.PNG">
 
 ### GRPO 解析
 RL+LLM : <br>
