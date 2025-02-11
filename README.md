@@ -29,7 +29,7 @@
 大模型的逻辑能力一直是我们最关注的点，对于Agents来说，决策与思考能力是提高Agents工作效率的关键。AI在这方面的能力由最初的隐性的逐步补全慢慢上升为关注焦点。举例：24年初时的语言大模型还不能玩如狼人杀之类的推理能力（即使把逻辑作为prompt，并给予充分的举例仍然不行）；24年中时，已经有团队利用Agents玩狼人杀游戏了，然而效果依然不尽人意；24年底的deepseek-R1和openAI o3 mini给到了我们新的视角，特别是 deepseek-R1-zero 为人们在特定的任务上提供了一种加速推理任务训练的新思路，有望更新“推理任务”与“计算、人力成本”的权衡估计方式。<br>
 下面的文档将会涵盖一部分根据搜集来的数据和实践结果总结的“COT”和“大模型能力密度”的相关内容。由于DeepSeek V3 的结构对在节省算力、节省tensor间通信成本上有一定潜力，所以这里也做解读。<br>
 思维链相关：[./doc/Readme_RLCOTStratege.md](./doc/Readme_RLCOTStratege.md) <br>
-DeepSeek-V3结构相关：<br>
+DeepSeek-V3结构相关：[./doc/Readme_RLCOTV3.md](./doc/Readme_RLCOTV3.md) <br>
 DeepSeek-R1相关：[./doc/Readme_RLCOTDeepSeek.md](./doc/Readme_RLCOTDeepSeek.md) <br>
 
 3. 行动：<br>
