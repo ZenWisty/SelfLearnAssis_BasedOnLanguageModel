@@ -96,9 +96,50 @@ static __global__ void rms_norm_f32(const float * x, float * dst, const int ncol
 ### quantize
 quantize_q8_1 kernel用于对数据进行int8的对称均匀量化，具体而言，此时就是对输入shape为[1,1,4096]的fp32数据进行量化，girdDim ={16,1,1} , blockDim={256 , 1, 1} <br>
 
-### rope
-<img src="./llamacpp/Llama5.png">
-一般rope只会对Q和K进行位置编码
+### RoPE
+<img src="./llamacpp/Llama5.png"><br>
+一般rope只会对Q和K进行位置编码。旋转位置编码主要出现背景：固定位置编码sin、cos对于长上下文输入的情况编码起来有些吃力了。<br>
+旋转位置编码的原理简单概述：对于两个夹角相同的向量，他们旋转相同的角度之后，两者的点积不变。对于矩阵也是如此，因此对于q和k，乘以相同的旋转矩阵，q@k的结果不变。但此时，q和k已经带上了位置信息。<br>
+RoPE 随着上下文变长的效果：<br>
+<img src="./llamacpp_framework_component/RoPE.PNG">
+贴一个python的实现方便，实际llamacpp中没有python实现：<br>
+
+```python
+import torch
+import torch.nn as nn
+
+def rotate_half(x):
+    x1, x2 = x.chunk(2, dim=-1)
+    return torch.cat((-x2, x1), dim=-1)
+
+def apply_rotate_pos_emb(q, k, cos, sin, unsqueeze_dim=2):
+    
+    cos = cos.unsqueeze(unsqueeze_dim)
+    sin = sin.unsqueeze(unsqueeze_dim)
+   
+    q_embed = (q*cos) + (rotate_half(q)*sin)
+    k_embed = (k*cos) + (rotate_half(k)*sin)
+    
+    return q_embed, k_embed
+
+class RotaryEmbedding(nn.Module):
+    def __init__(self, dim, max_seq_len=1024):
+        super(RotaryEmbedding, self).__init__()
+        self.dim = dim
+        self.max_seq_len = max_seq_len
+        inv_freq = 1.0 / (10000 ** (torch.arange(0, dim, 2).float() / dim))
+        t = torch.arange(max_seq_len).float().unsqueeze(1)
+        freqs = t @ inv_freq.unsqueeze(0)
+        freqs = torch.cat((freqs, freqs), dim=-1)
+        
+        self.register_buffer("cos_cached", freqs.cos())
+        self.register_buffer("sin_cached", freqs.sin())
+        
+    def forward(self, q, k):
+        cos = self.cos_cached[:q.shape[1], :].unsqueeze(0)
+        sin = self.sin_cached[:q.shape[1], :].unsqueeze(0)
+        return apply_rotate_pos_emb(q, k, cos, sin)  
+```
 
 ```cpp
 template<bool forward, bool has_ff, typename T>
