@@ -99,7 +99,7 @@ quantize_q8_1 kernel用于对数据进行int8的对称均匀量化，具体而�
 ### RoPE
 <img src="./llamacpp/Llama5.png"><br>
 一般rope只会对Q和K进行位置编码。旋转位置编码主要出现背景：固定位置编码sin、cos对于长上下文输入的情况编码起来有些吃力了。<br>
-旋转位置编码的原理简单概述：对于两个夹角相同的向量，他们旋转相同的角度之后，两者的点积不变。对于矩阵也是如此，因此对于q和k，乘以相同的旋转矩阵，q@k的结果不变。但此时，q和k已经带上了位置信息。<br>
+旋转位置编码的原理简单概述：对于两个夹角相同的向量，他们旋转相同的角度之后，两者的点积不变。对于矩阵也是如此，因此对于q和k，乘以相同的旋转矩阵，q@k的结果不变。但此时，q和k已经带上了位置信息。https://nn.labml.ai/transformers/rope/index.html<br>
 RoPE 随着上下文变长的效果：<br>
 <img src="./llamacpp_framework_component/RoPE.PNG">
 贴一个python的实现方便，实际llamacpp中没有python实现：<br>
@@ -142,17 +142,39 @@ class RotaryEmbedding(nn.Module):
 ```
 
 ```cpp
-template<bool forward, bool has_ff, typename T>
+static float rope_yarn_ramp(const float low, const float high, const int i0) {
+    const float y = (i0 / 2 - low) / MAX(0.001f, high - low);
+    return 1 - MIN(1, MAX(0, y));
+}
+
+static void rope_yarn(
+    float theta_extrap, float freq_scale, float corr_dims[2], int64_t i0, float ext_factor, float mscale,
+    float * cos_theta, float * sin_theta) {
+    // Get n-d rotational scaling corrected for extrapolation
+    float theta_interp = freq_scale * theta_extrap;
+    float theta = theta_interp;
+    if (ext_factor != 0.0f) {
+        float ramp_mix = rope_yarn_ramp(corr_dims[0], corr_dims[1], i0) * ext_factor;
+        theta = theta_interp * (1 - ramp_mix) + theta_extrap * ramp_mix;
+
+        // Get n-d magnitude scaling corrected for interpolation
+        mscale *= 1.0f + 0.1f * logf(1.0f / freq_scale);
+    }
+    *cos_theta = cosf(theta) * mscale;
+    *sin_theta = sinf(theta) * mscale;
+}
+template<bool forward, bool has_ff, typename T>   /* <1,32,1> <512,1,1> */
 static __global__ void rope_norm(
         const T * x, T * dst, const int ne0, const int ne1, const int s1, const int s2, const int n_dims,
         const int32_t * pos, const float freq_scale, const float ext_factor, const float attn_factor,
         const rope_corr_dims corr_dims, const float theta_scale, const float * freq_factors) {
+    // 计算col 号， 输入参数中 ne0 是列数(某一维的维度)，ne1 是行数; 一个线程计算相邻的两个数的cos和sin; 这里的i0决定了powf 的指数参数是多少
     const int i0 = 2*(blockDim.y*blockIdx.y + threadIdx.y);
 
-    if (i0 >= ne0) {
+    if (i0 >= ne0) {    // 这里分配了很多线程，但是实际使用的线程数目用 ne0截断了
         return;
     }
-
+    // 计算row 号
     const int row_dst = blockDim.x*blockIdx.x + threadIdx.x;
 
     if (i0 >= n_dims) {
@@ -169,7 +191,7 @@ static __global__ void rope_norm(
 
     const int idst = row_dst*ne0 + i0;
     const int ix   = channel_x*s2 + row_x*s1 + i0;
-
+    // theta_scale = 10000.0f
     const float theta_base = pos[channel_x]*powf(theta_scale, i0/2.0f);
 
     const float freq_factor = has_ff ? freq_factors[i0/2] : 1.0f;
@@ -177,7 +199,7 @@ static __global__ void rope_norm(
     float cos_theta;
     float sin_theta;
 
-    rope_yarn<forward>(theta_base/freq_factor, freq_scale, corr_dims, i0, ext_factor, attn_factor, cos_theta, sin_theta);
+    rope_yarn(theta_base/freq_factor, freq_scale, corr_dims, i0, ext_factor, attn_factor, cos_theta, sin_theta);
 
     const float x0 = x[ix + 0];
     const float x1 = x[ix + 1];
