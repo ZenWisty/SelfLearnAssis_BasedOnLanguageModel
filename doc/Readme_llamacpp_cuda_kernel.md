@@ -150,34 +150,41 @@ static float rope_yarn_ramp(const float low, const float high, const int i0) {
 static void rope_yarn(
     float theta_extrap, float freq_scale, float corr_dims[2], int64_t i0, float ext_factor, float mscale,
     float * cos_theta, float * sin_theta) {
-    // Get n-d rotational scaling corrected for extrapolation
     float theta_interp = freq_scale * theta_extrap;
     float theta = theta_interp;
+    // 一般调用这个计算
     if (ext_factor != 0.0f) {
         float ramp_mix = rope_yarn_ramp(corr_dims[0], corr_dims[1], i0) * ext_factor;
         theta = theta_interp * (1 - ramp_mix) + theta_extrap * ramp_mix;
 
-        // Get n-d magnitude scaling corrected for interpolation
         mscale *= 1.0f + 0.1f * logf(1.0f / freq_scale);
     }
     *cos_theta = cosf(theta) * mscale;
     *sin_theta = sinf(theta) * mscale;
 }
-template<bool forward, bool has_ff, typename T>   /* <1,32,1> <512,1,1> */
+template<bool forward, bool has_ff, typename T>   /* <80,1,1> <1,256,1> */
 static __global__ void rope_norm(
         const T * x, T * dst, const int ne0, const int ne1, const int s1, const int s2, const int n_dims,
         const int32_t * pos, const float freq_scale, const float ext_factor, const float attn_factor,
         const rope_corr_dims corr_dims, const float theta_scale, const float * freq_factors) {
+    // take an instance: ne0 = 128, ne1 = 16, s1 = 128, s2 = 2048, n_dims = 128 
+    // freq_scale = 1
+    // ext_factor = 0
+    // attn_factor = 1
+    // corr_dims = {23, 40}
+    // theta_scale = powf(freq_base, -2.0f/n_dims) = 0.805842161
     // 计算col 号， 输入参数中 ne0 是列数(某一维的维度)，ne1 是行数; 一个线程计算相邻的两个数的cos和sin; 这里的i0决定了powf 的指数参数是多少
     const int i0 = 2*(blockDim.y*blockIdx.y + threadIdx.y);
+    //                256        0            0~255  
 
-    if (i0 >= ne0) {    // 这里分配了很多线程，但是实际使用的线程数目用 ne0截断了
+    if (i0 >= ne0) {    // 这里分配了256线程，但是实际使用的线程数目用 ne0截断了,增加了block 的 diversity，可能出现只有一半的线程执行了，另一半空置提前返回,(?)
         return;
     }
     // 计算row 号
     const int row_dst = blockDim.x*blockIdx.x + threadIdx.x;
+    //                  1          0~80         0
 
-    if (i0 >= n_dims) {
+    if (i0 >= n_dims) { // n_dims = 128 代表需要做rope freq 的维度
         const int i = row_dst*ne0 + i0;
 
         dst[i + 0] = x[i + 0];
@@ -186,12 +193,13 @@ static __global__ void rope_norm(
         return;
     }
 
-    const int row_x     = row_dst % ne1;
-    const int channel_x = row_dst / ne1;
+    const int row_x     = row_dst % ne1;    // ne1 = 16
+    const int channel_x = row_dst / ne1;    // 每个通道16行
 
     const int idst = row_dst*ne0 + i0;
-    const int ix   = channel_x*s2 + row_x*s1 + i0;
-    // theta_scale = 10000.0f
+    const int ix   = channel_x*s2 + row_x*s1 + i0;  
+    //channel_x (0~80分成 5个16行)*2048 + row_x(0~15)*128+i0(0~127)*2
+
     const float theta_base = pos[channel_x]*powf(theta_scale, i0/2.0f);
 
     const float freq_factor = has_ff ? freq_factors[i0/2] : 1.0f;
@@ -201,6 +209,7 @@ static __global__ void rope_norm(
 
     rope_yarn(theta_base/freq_factor, freq_scale, corr_dims, i0, ext_factor, attn_factor, cos_theta, sin_theta);
 
+    // 上面的部分都相当于在求 矩阵中对应位置的相应的freq 分量
     const float x0 = x[ix + 0];
     const float x1 = x[ix + 1];
 
