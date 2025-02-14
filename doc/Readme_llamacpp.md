@@ -7,8 +7,12 @@ llama.cpp 的环境配置相对来说简单：我拿的是github上的 afa8a9ec9
 option(GGML_CUDA                            "ggml: use CUDA"                                  OFF)<br>
 改为:<br>
 option(GGML_CUDA                            "ggml: use CUDA"                                  ON)<br>
+删除根目录下的CMakePreset.json.<br>
+然后在根目录下用cmake build 即可。<br>
 
 需要使用这个例子还得从huggingface 上下载书生大模型：https://huggingface.co/internlm/internlm2-1_8b/tree/main?library=transformers <br>
+我这里使用gguf 文件，需要运行一下 根目录下的脚本 convert_hf_to_gguf.py:<br>
+python convert_hf_to_gguf.py /home/hyx/Documents/huggingface/hub/models--internlm--internlm2-1_8b/snapshots/e96c608609a487e5674dffb18f7fa135d6c4b171 --outtype f32  <br>
 为方便，将simple中的main函数中的model路径修改成我们下载的路径：<br>
 ```cpp
 int main(int argc, char ** argv) {
