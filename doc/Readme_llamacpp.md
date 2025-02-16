@@ -751,6 +751,10 @@ static struct ggml_object * ggml_new_object(struct ggml_context * ctx, enum ggml
     ml.init_mappings(true, use_mlock ? &pimpl->mlock_mmaps : nullptr);
     pimpl->mappings.reserve(ml.mappings.size());
     //...
+
+    // 真正调用 cuda_malloc 函数的是这个地方，只有在此之后分配显存
+    //  之前的ggml_buffer_context 的 ggml tensor object 就是 ggml_backend_buffer 类型，ggml_backend_buffer 类型的void * context 在使用 CUDA的情况下，就是 ggml_backend_cuda_buffer_context ,其中记录了 在GPU显存中的buffer 位置偏移
+    ggml_backend_buffer_t buf = ggml_backend_alloc_ctx_tensors_from_buft(ctx, buft);
 ```
 
 
