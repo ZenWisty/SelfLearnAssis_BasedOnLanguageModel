@@ -435,7 +435,7 @@ llama_model_loader 创建完成之后会调用 load_hparams，这个函数会将
 #### load_tensors 函数
 load_hparams 之后会调用 load_tensors 函数。十分重要，单独分析:<br>
 llama_model_load 中的 load_tensors 函数 ， 用来将ml 中的 context 中的内容读到 llama_model 和 gpu中<br>
-有关cpu gpu 的 buf list,我看过一些博文，cpu部分的buflist 确实会创建3个，第一个是cpu的dev，第二个是gpu的dev，第三个又是cpu的dev，不清楚这样的设计是为了规避什么，但是这里执行时在有gpu的情况下，会不用第一个cpu的dev的buflist。:<br>
+有关cpu gpu 的 buf list,我看过一些博文，cpu部分的buflist 确实会创建3个，第一个是cpu extra的dev，第二个是gpu host(cpu)的dev，第三个是cpu的dev，但是这里执行时不用第一个cpu的dev的buflist。:<br>
 <img src="./llamacpp/ggml_7.png" alt="引用图" width="980" height="410"><br>
 源码：<br>
 load_tensors 函数：<br>
@@ -744,6 +744,7 @@ static struct ggml_object * ggml_new_object(struct ggml_context * ctx, enum ggml
 }
 ```
 #### ml.create_tensors都执行完之后的 load_tensor 后半部分
+load_tensor 函数主体：<br>
 ```cpp
     // ... 
     ml.done_getting_tensors();
@@ -755,6 +756,42 @@ static struct ggml_object * ggml_new_object(struct ggml_context * ctx, enum ggml
     // 真正调用 cuda_malloc 函数的是这个地方，只有在此之后分配显存
     //  之前的ggml_buffer_context 的 ggml tensor object 就是 ggml_backend_buffer 类型，ggml_backend_buffer 类型的void * context 在使用 CUDA的情况下，就是 ggml_backend_cuda_buffer_context ,其中记录了 在GPU显存中的buffer 位置偏移
     ggml_backend_buffer_t buf = ggml_backend_alloc_ctx_tensors_from_buft(ctx, buft);
-```
 
+    // ... 一些检查函数
+    // 在分配完显存和内存之后，tensor 信息读入. 
+    // 对 bufs 循环，会有两个读入过程，一个是gpu的，一个是cpu 的
+    // ctx 先执行gpu的,再执行 cpu 的，ml.load_all_data 有多态
+    for (auto & it : ctx_bufs) {
+        ggml_context * ctx = it.first;
+        auto & bufs = it.second;
+        if (!ml.load_all_data(ctx, bufs, use_mlock ? &pimpl->mlock_mmaps : NULL, params.progress_callback, params.progress_callback_user_data)) {
+            return false;
+        }
+    }
+```
+这里打断一下，来看 load_all_data 函数中的内容:<br>
+```cpp
+bool llama_model_loader::load_all_data(
+        struct ggml_context * ctx,
+        llama_buf_map & bufs,
+        llama_mlocks * lmlocks,
+        llama_progress_callback progress_callback,
+        void * progress_callback_user_data) {
+            // ...
+            for (struct ggml_tensor * cur = ggml_get_first_tensor(ctx); cur != NULL; cur = ggml_get_next_tensor(ctx, cur)) {
+                const auto * weight = get_weight(ggml_get_name(cur)); // 获取 当前 权重
+                //...
+                if (use_mmap) {
+                    // 获取 mapping 内存映射信息
+                    const auto & mapping = mappings.at(weight->idx);
+                    //...
+                    // 这个是在取GPU上第一个tensor 的地址
+                    uint8_t * data = (uint8_t *) mapping->addr() + weight->offs;
+                    // ... 
+                    // 实际读入的位置 其中 buf->iface.set_tensor(buf, tensor, data, offset, size); 
+                    // 然后调用CUDA_CHECK(cudaMemcpyAsync((char *)tensor->data + offset, data, size, cudaMemcpyHostToDevice, cudaStreamPerThread)); 会将读入显存
+                    ggml_backend_tensor_set(cur, data, 0, n_size);
+            }
+        }
+```
 
