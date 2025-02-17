@@ -21,7 +21,7 @@ int main(int argc, char ** argv) {
     // ...
 ```
 然后切到根目录用Cmake build即可。<br>
-## 源码解读
+## 源码解读大纲:
 
 llama.cpp  simple.cpp 中分为几大步：
 1. ggml_backend_load_all（） dll读入所有需要使用的 ggml backend的函数；
@@ -33,34 +33,15 @@ llama.cpp  simple.cpp 中分为几大步：
 
 对上面的步骤择重点来解析：<br>
 
-### llama_model_default_params（）
-#### 所返回的 llama_model_params 的参数:
-NOTE:llamacpp 中"初始化 context 和 依赖 context 来读取gguf，构建llama_model 的过程"这一部分的结构比较复杂，这里平铺出来可能显得内容多且乱，最好的方法是直接调试，逐步分解，不过在这里还是把个人认为的重点列举出来，供参考，可跳过。<br>
-```cpp
-struct llama_model_params {
-ggml_backend_dev_t * devices; // list 存放设备，因为可能有多张卡，所以需要list
-int32_t n_gpu_layers; // 有多少个 layers 放在 gpu 中
-enum llama_split_mode split_mode; // 多个 GPU时如何分layer到gpu上，解析见下面“llama_split_mode”
-int32_t main_gpu;	// 多gpu时，且用的是分发制时，主分发gpu用的是哪一块
-const float * tensor_split;	// 分配给多gpu的比例
-llama_progress_callback progress_callback;	// 进度条（不重要）
-void * progress_callback_user_data;	//用于计算进度条的内容（不重要）
-const struct llama_model_kv_override * kv_overrides;	// model 的kv对，超参
+## llama_model 结构构建
+第3步中,llama_model_load_from_file 函数中所新建的 llama_model 结构总结.<br>
+总的来说 最后的 llama_model 结构是这样的:<br>
+<img src="./llamacpp/Llama6.png"><br>
+这里的ctxs 包含两种，一种是 cpu 的 一种是 gpu的.<br>
+ 同时，llama_model 中的每个写死或没写死的层，其中的ggml_tensor 结构 都会指向ctx 中的连续内存，（注意这里的 ctxs 都是在cpu的内存，只不过管gpu的ctx 内存中会记录显存首地址和偏移量）。<br>
+ <img src="./llamacpp/Llama7.png">
 
-bool vocab_only;    // 这个根据具体实现，这里还不知道不读入 weight 影响什么
-bool use_mmap;      // 是否使用内存映射（重要）
-bool use_mlock;     // 是否锁页内存
-bool check_tensors; // （不重要）
-};
-```
-```cpp 
-//llama_split_mode 定义
-LLAMA_SPLIT_MODE_NONE  = 0, // 单 GPU
-LLAMA_SPLIT_MODE_LAYER = 1, // 将 layers 和 KV cache 在 GPU 之间 分布式部署
-LLAMA_SPLIT_MODE_ROW   = 2, // 将 layers 和 KV cache 在 GPU 之间 分布式部署，如果系统支持tensor split，就采用
-```
-#### llama_model_load_from_file 函数中新建的 llama_model以及 llama_model中的impl类的内容
-llama_model_load_from_file 比较重要，其中会新建一个 llama_model 类，参数都是初始化的，tensor赋值和参数赋值会留到之后；但是llama_model 依然包含一些重要的内容： llama_model 中包含了一个 impl 类：
+llama_model 包含一些重要的内容： llama_model 中包含了一个 impl 类：
 <br>llamacpp是先建立context存放上下文和需要开辟的空间的信息，然后再分配、赋值存储空间的。<br>
 先逐步看一下 llama_model中的 impl类的内容（后文再解释内存/显存分配的模式）：
 ```cpp
@@ -189,6 +170,32 @@ ctx->size += GGML_PAD(ggml_nbytes(&ti.t), ctx->alignment);<br>
 关于 ggml.c 中的  内存对齐这个问题后面再讨论：const size_t mem_size = params.mem_buffer ? params.mem_size : GGML_PAD(params.mem_size, GGML_MEM_ALIGN);<br>
 <br>
 
+### llama_model_default_params（）
+####  llama_model_params 的参数:
+NOTE:llamacpp 中"初始化 context 和 依赖 context 来读取gguf，构建llama_model 的过程"这一部分的结构比较复杂，这里平铺出来可能显得内容多且乱，最好的方法是直接调试，逐步分解，不过在这里还是把个人认为的重点列举出来，供参考，可跳过。<br>
+```cpp
+struct llama_model_params {
+ggml_backend_dev_t * devices; // list 存放设备，因为可能有多张卡，所以需要list
+int32_t n_gpu_layers; // 有多少个 layers 放在 gpu 中
+enum llama_split_mode split_mode; // 多个 GPU时如何分layer到gpu上，解析见下面“llama_split_mode”
+int32_t main_gpu;	// 多gpu时，且用的是分发制时，主分发gpu用的是哪一块
+const float * tensor_split;	// 分配给多gpu的比例
+llama_progress_callback progress_callback;	// 进度条（不重要）
+void * progress_callback_user_data;	//用于计算进度条的内容（不重要）
+const struct llama_model_kv_override * kv_overrides;	// model 的kv对，超参
+
+bool vocab_only;    // 这个根据具体实现，这里还不知道不读入 weight 影响什么
+bool use_mmap;      // 是否使用内存映射（重要）
+bool use_mlock;     // 是否锁页内存
+bool check_tensors; // （不重要）
+};
+```
+```cpp 
+//llama_split_mode 定义
+LLAMA_SPLIT_MODE_NONE  = 0, // 单 GPU
+LLAMA_SPLIT_MODE_LAYER = 1, // 将 layers 和 KV cache 在 GPU 之间 分布式部署
+LLAMA_SPLIT_MODE_ROW   = 2, // 将 layers 和 KV cache 在 GPU 之间 分布式部署，如果系统支持tensor split，就采用
+```
 
 ### llama_model_load_from_file()
 llama_model_load_from_file会调用 llama_model_load，其中会创建 llama_model_loader 类：const int status = llama_model_load(path_model, splits, *model, params);<br>
@@ -795,3 +802,35 @@ bool llama_model_loader::load_all_data(
         }
 ```
 
+## 构建计算图
+llamacpp 号称在运行时不申请新的内存，所以在构建计算图前，会先申请中间结果需要的内存，且这个时候会临时构建context用于构建图，创建一个哈希表，然后把节点都放到哈希表里面。<br>
+### llama_init_from_model
+llama_context struct:<br>
+```cpp
+struct llama_context {
+    // ...
+    std::vector<ggml_backend_ptr> backends; // ggml_backend 类,
+    // 需要多少个线程
+    std::vector<std::pair<ggml_backend_t, ggml_backend_set_n_threads_t>> set_n_threads_fns;
+    // cpu 的 后端 ,ggml_backend 类,
+    ggml_backend_t backend_cpu = nullptr;   // 包括 backend devices ， interface 接口， context信息
+
+    // kv cache 需要分配tensor，预先留出的空间, 
+    //llama_kv_cache 类, 包括，tensors ,  context , buffer
+    struct llama_kv_cache     kv_self;
+
+    // 记录线程池
+    ggml_threadpool_t threadpool       = nullptr;
+    ggml_threadpool_t threadpool_batch = nullptr;
+    // ...
+    // tensors
+    // input tensors
+    struct ggml_tensor * inp_tokens;        // I32 [n_batch]
+    struct ggml_tensor * inp_embd;          // F32 [n_embd, n_batch]
+    struct ggml_tensor * inp_pos;           // I32 [n_batch]
+    struct ggml_tensor * inp_out_ids;       // I32 [n_outputs]
+    struct ggml_tensor * inp_KQ_mask;       // F32 [kv_size, n_batch]
+    // ...
+}
+```
+llama_init_from_model 传入参数中有 llama_model，函数执行的一开始是初始化各种参数（包括layer的参数，旋转位置编码的参数等等），大部分是不需要关注的。<br>
