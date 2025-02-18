@@ -834,3 +834,40 @@ struct llama_context {
 }
 ```
 llama_init_from_model 传入参数中有 llama_model，函数执行的一开始是初始化各种参数（包括layer的参数，旋转位置编码的参数等等），大部分是不需要关注的。<br>
+主要的两个步骤是建立 scheduler 内存调度对象:<br>
+```cpp
+ctx->sched.reset(ggml_backend_sched_new(backend_ptrs.data(), backend_buft.data(), backend_ptrs.size(), max_nodes, pipeline_parallel));
+```
+和建立计算图:<br>
+```cpp
+ggml_cgraph * gf_pp = llama_build_graph(*ctx, ubatch_pp, true);
+```
+其中 ggml_backend_sched_new中会设定明确context_buffer 和 context_buffer_size， context_buffer_size 的大小实际为：<br>
+```cpp
+sched->context_buffer_size = ggml_sched_max_splits/*node数*/*GGML_SCHED_MAX_SPLIT_INPUTS/*默认为10*/*2*sizeof(struct ggml_tensor)/*一个tensor object 的大小，包含buffer指针信息*/ + ggml_graph_overhead_custom(graph_size, false)/*一个graph的大小*/;
+```
+需要注意的是 ggml_backend_sched 数据结构中包含一个 ggml_hash_set,一个 ggml_cgraph 对象, 一个 ggml_bachend_sched_split 对象. <br>
+其中 ggml_hash_set 是一个哈希表:<br>
+```cpp
+struct ggml_hash_set {
+    size_t size;
+    ggml_bitset_t * used;       // 哈希值，比如有50个tensor需要表示，用50bit来索引，需要ceil(50/32) 个整数来表示, 输入参数graph_size一般默认为8192, 因此通常为 (8192+小数/32)个整数。
+    struct ggml_tensor ** keys; // actual tensors in the set
+};
+```
+```cpp
+struct ggml_backend_sched_split {
+    //ggml_bachend_sched_split  负责不同设别，不同gpu卡上的计算调度
+    int backend_id;
+    int i_start;
+    int i_end;
+    struct ggml_tensor * inputs[GGML_SCHED_MAX_SPLIT_INPUTS];
+    int n_inputs;
+    // graph view of this split
+    struct ggml_cgraph graph;
+};
+```
+
+#### llama_build_graph 建图环节
+建图的基本过程是：先从node的信息入手，构建整个图，然后分辨出是否是leaf节点，最后整个图插入到 hash map中。<br>
+
