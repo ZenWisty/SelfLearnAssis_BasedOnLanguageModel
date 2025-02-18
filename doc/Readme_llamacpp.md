@@ -870,4 +870,16 @@ struct ggml_backend_sched_split {
 
 #### llama_build_graph 建图环节
 建图的基本过程是：先从node的信息入手，构建整个图，然后分辨出是否是leaf节点，最后整个图插入到 hash map中。<br>
-
+在这个例子中llama_build_graph调用的是llm.build_internlm2() 来构建graph，一步步调试可以看到llm.build_internlm2()会先初始化ggml_graph,调用ggml_new_graph_custom. ggml_new_graph_custom 会在内部新开辟一片cgraph所需的空间，8192个nodes_ptr所需的空间，8192个leafs_ptr所需的空间，所有16411个hash_keys_ptr 所需要的空间，如果需要的话grads_ptr和grad_accs_ptr的空间也会开辟，不过这里推理不开。最后还会开存放hash_used 所需的空间。<br>
+build_internlm2() 会首先构建 input tensor:<br>
+```cpp
+// build_internlm2():
+inpL = llm_build_inp_embd(ctx0, lctx, hparams, ubatch, model.tok_embd, cb);
+// llm_build_inp_embd():
+    lctx.inp_tokens = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, ubatch.n_tokens);
+    cb(lctx.inp_tokens, "inp_tokens", -1);
+    ggml_set_input(lctx.inp_tokens);
+    // 根据输入的 token embedding 矩阵 和刚创建的 input token，构建乘法操作的输出矩阵大小的tensor inpL
+    inpL = ggml_get_rows(ctx, tok_embd, lctx.inp_tokens);
+    // 没有用 Lora所以后面略过了
+```
