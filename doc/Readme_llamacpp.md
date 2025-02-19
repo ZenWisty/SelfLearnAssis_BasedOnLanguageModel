@@ -882,4 +882,31 @@ inpL = llm_build_inp_embd(ctx0, lctx, hparams, ubatch, model.tok_embd, cb);
     // 根据输入的 token embedding 矩阵 和刚创建的 input token，构建乘法操作的输出矩阵大小的tensor inpL
     inpL = ggml_get_rows(ctx, tok_embd, lctx.inp_tokens);
     // 没有用 Lora所以后面略过了
+    //...
+// 回到 build_internlm2():
+    // 创建KQ_mask 等
+    struct ggml_tensor * inp_pos = build_inp_pos(); 
+    struct ggml_tensor * KQ_mask = build_inp_KQ_mask();
+    // 总共 24 个层
+    for (int il = 0; il < n_layer; ++il) {
+        // 每个层都先是一个norm 层llm_build_norm，后面再接 self-attention
+        // self-atten:
+        // Qcur
+        // Kcur
+        // Vcur
+        // Qcur Rope, Vcur RoPE:
+        Qcur = ggml_rope_ext(
+                    ctx0, ggml_reshape_3d(ctx0, Qcur, n_embd_head, n_head,    n_tokens), inp_pos, nullptr,
+                    n_rot, rope_type, n_ctx_orig, freq_base, freq_scale,
+                    ext_factor, attn_factor, beta_fast, beta_slow
+                );  // ...
+        // llm_build_kv 函数中，会先将Qcur,Vcur,Kcur 加入到graph中，加入到 哈希表里
+        cur = llm_build_kv(ctx0, lctx, kv_self, gf,
+                        model.layers[il].wo, model.layers[il].bo,
+                        Kcur, Vcur, Qcur, KQ_mask, n_tokens, kv_head, n_kv, 1.0f/sqrtf(float(n_embd_head)), cb, il);
+        // llm_build_kv 中的关键函数是  ggml_build_forward_expand（graph, cur），
+        // 这个函数会根据graph递归的深度优先搜索将子结点加入到哈希表中，这里相当于是提前加入哈希表，为避免之后重复加入
+        // forward_expand 会被调用多次，但是由于有减枝操作，因此不会做重复计算,也不会将节点重复加入哈希表
+
+    }
 ```
