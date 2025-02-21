@@ -1,4 +1,11 @@
 # llama.cpp cuda 版本 部分算子
+环境要求:
+llamcpp 重新编译，打开工程中ggml => src => ggml-cuda => CMakeList.txt, 150行添加：
+```plaintext
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        target_compile_options(ggml-cuda PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-G>)
+    endif()
+```
 大模型的推理可以分为prompt和generation两个阶段,prompt阶段是多token输入 input_tensor: [batch_size, seq_len, hidden_dim], generation阶段的输入则是 input_tensor: [batch_size, 1, hidden_dim]<br>
 前者更多的计算算子是gemm，而后者更多的计算算子则是gemv <br>
 大致了解一下  基础结构单元, 这些结构的kernel具体调用的哪个可以运行以便 nvproof 从Nsight Systems Profile report中直观的看到：<br>
