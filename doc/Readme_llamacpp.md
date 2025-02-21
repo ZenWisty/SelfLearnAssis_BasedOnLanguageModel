@@ -31,6 +31,10 @@ llama.cpp  simple.cpp 中分为几大步：
 5. 转换 input 和 prompt 作为输入，并根据初始化的模型类对象调用llama_init_from_model 初始化 模型context 。
 6. 利用context 调用模型，并得到输出结果
 
+总结一下其中的常用关键数据结构：Llama_model 是模型描述了整个模型，llama_context 是负责维护整个 llama 模型环境的，ggml_tensor 是模型中的核心部件，ggml_cgraph 是负责结构的， ggml_object 是负责存储的，ggml_cplan 是负责多线程执行的，ggml_context 应该是维护 object 级别关系的。<br>
+其他前缀也比较有代表性，ggml 开头的是通用的，也是底层的。llama 开头的主要是为 llama 模型准备的其他模型可以再照葫芦画。<br>
+构造结构时，llama_build_graph中会通过 llm_build_cb 的函数来完成每个算子的构造，同时完成每个 Tensor 的内存位置申请和引用。<br>
+
 对上面的步骤择重点来解析：<br>
 
 ## llama_model 结构构建
