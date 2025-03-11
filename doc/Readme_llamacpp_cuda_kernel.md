@@ -1,4 +1,14 @@
 # llama.cpp cuda 版本 部分算子
+环境要求:
+llamcpp 重新编译，打开工程中ggml => src => ggml-cuda => CMakeList.txt, 150行添加：
+```plaintext
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        target_compile_options(ggml-cuda PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-G>)
+    endif()
+```
+
+llamacpp中很多算子为了适应不同情况，用算子工厂来实现：如常见的ggml_cuda_op_mul_mat，以及ggml_cuda_op_flatten。这些会在ggml_build_graph过程中用 llm_build_cb来构造不同的算子。
+
 大模型的推理可以分为prompt和generation两个阶段,prompt阶段是多token输入 input_tensor: [batch_size, seq_len, hidden_dim], generation阶段的输入则是 input_tensor: [batch_size, 1, hidden_dim]<br>
 前者更多的计算算子是gemm，而后者更多的计算算子则是gemv <br>
 大致了解一下  基础结构单元, 这些结构的kernel具体调用的哪个可以运行以便 nvproof 从Nsight Systems Profile report中直观的看到：<br>
@@ -92,6 +102,7 @@ static __global__ void rms_norm_f32(const float * x, float * dst, const int ncol
     }
 }
 ```
+注意rms_norm_f32这个kernel 在prompting阶段处理的tensor shape 是[1, seq_len , 4096] ，nrows 等于seq_len，在generation阶段处理的tensor shape 则是[1, 1 , 4096] <br>
 
 ### quantize
 quantize_q8_1 kernel用于对数据进行int8的对称均匀量化，具体而言，此时就是对输入shape为[1,1,4096]的fp32数据进行量化，girdDim ={16,1,1} , blockDim={256 , 1, 1} <br>
@@ -218,8 +229,17 @@ static __global__ void rope_norm(
 }
 ```
 
+### 折叠操作
+llama.cpp 中特有的折叠操作，折叠操作广泛用于MUL操作和 MAT_MUL 操作中。针对需要broad_cast的情况，
+llama.cpp 不能broad_cast，因此需要将broad_cast的情况转换为fold折叠 操作，举例说明fold 操作的原理是：<br>
+对于一个 [5,2,3,1] 的矩阵A与[5,2,1,1]的矩阵B进行 mul 操作的情况（注意不是mat_mul）,这里numpy中会将 [5,2,1,1]
+broadcast 成为 [5,2,3,1]的大小。而llamacpp中会这样:先将A变为[10,3,1,1]的矩阵，B变为[10,1,1,1]的矩阵，
+然后再进行类似broad_cast 的逐元素相乘的操作，这样折叠是为了方便进行类似broad_cast的乘法操作，且
+llama.cpp 不会真的将B变为[5,2,1,1]变为[5,2,3,1]之后再进行MUL。<br>
+
 ### mat_mul
-注意rms_norm_f32这个kernel 在prompting阶段处理的tensor shape 是[1, seq_len , 4096] ，nrows 等于seq_len，在generation阶段处理的tensor shape 则是[1, 1 , 4096] <br>
+
+
 ```cpp
 template <typename T, typename type_acc, int block_size>
 static __global__ void mul_mat_vec(
