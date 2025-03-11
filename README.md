@@ -44,7 +44,7 @@ NOTE：1)11月开始学习开发RAG等相关功能，12月底时才发现豆包A
 
 
 ### 使用这个项目整理出来的其他技术相关文档
-cpp 基础学习项目：https://github.com/ZenWisty/Autodidactic_CPPProject_Note
+cpp 基础学习项目：https://github.com/ZenWisty/Autodidactic_CPPProject_Note <br>
 cuda 基础及细节备忘：https://github.com/ZenWisty/Autodidactic_ParallelismComp_Notes
 
 ### 围绕 Agents 的技术栈
