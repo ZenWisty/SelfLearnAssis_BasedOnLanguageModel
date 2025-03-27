@@ -17,7 +17,7 @@
 1. 观察：<br> 
 在原始的 metagpt 架构中各个单智能体通过接收上下游智能体发出的文字context信息+自己的记忆memory，来完成observe这个动作。<br>
 主流的努力方向主要聚焦多模态输入，希望通过扩充输入模态，模拟人类的观察行为，更加全面的观察周围环境，用于后续决策。<br>
-目前这个项目中的观察模块除了memory 和 context信息外，主要还使用了 MiniCPM 的模型来扩充额外输入。因为它的模型大小适宜，方便我在家里部署agent的backend。目前并未测试这个模型的能力边界。<br>MiniCPM-o是架构类似clip的多模态模型，其中的语言主干取自千问。关于多模态输入的MiniCPM-o模型的效果，一个直观的效果：<br>
+目前这个项目中的观察模块除了memory 和 context信息外，主要还使用了 MiniCPM 的模型来扩充额外输入(其中实时图像输入可以来自这个项目 https://github.com/ZenWisty/Vision_Sensor_Prim )。因为它的模型大小适宜，方便我在家里部署agent的backend。目前并未测试这个模型的能力边界。<br>MiniCPM-o是架构类似clip的多模态模型，其中的语言主干取自千问。关于多模态输入的MiniCPM-o模型的效果，一个直观的效果：<br>
 >>> 输入：<br>
 <img src="./doc/two_cats.jpeg" alt="小猫" width="180" height="228"><br>
 这是两只什么动物？猜测一下这两只动物之间是什么关系<br>
